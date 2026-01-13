@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Python Notebook
+*.ipynb
+
+# Virtual environments
+.venv
+.env
+
+# Documents
+KASBI  SOURCE/
+
+# Chroma DB TEMPORARY
+chroma_db/
