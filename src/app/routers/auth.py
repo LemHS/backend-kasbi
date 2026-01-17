@@ -1,0 +1,105 @@
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import selectinload
+from sqlmodel import Session, select
+
+from database import get_db
+from models.role import Role
+from models.user import User
+from schemas.auth import LoginRequest, RefreshRequest, RegisterRequest, TokenPair
+from schemas.common import APIResponse
+from security.dependencies import GetUser
+from security.jwt import TokenType, create_access_token, create_refresh_token, decode_token
+from security.passwords import hash_password, verify_password
+
+router = APIRouter(prefix="/v1/auth", tags=["Auth"])
+
+def _issue_tokens(user: User):
+    primary_role = user.role[0].name if user.role else "user"
+    access_token = create_access_token(str(user.id), primary_role, user.token_version, extra_claims={"roles": [primary_role]})
+    refresh_token = create_refresh_token(str(user.id), primary_role, user.token_version, extra_claims={"roles": [primary_role]})
+
+    return TokenPair(access_token=access_token, refresh_token=refresh_token, role=primary_role)
+
+
+@router.post("/register", response_model=APIResponse[TokenPair], status_code=201)
+def register(payload: RegisterRequest, session: Session = Depends(get_db)) -> APIResponse[TokenPair]:
+    exist_email = session.exec(select(User).where(User.email == payload.email)).one_or_none()
+    exist_username = session.exec(select(User).where(User.username == payload.username)).one_or_none()
+
+    if exist_email:
+        raise HTTPException(status_code=409, detail="email_taken", message="Email already registered")
+    
+    if exist_username:
+        raise HTTPException(status_code=409, detail="username_taken", message="Username taken")
+    
+    role = session.exec(select(Role).where(Role.name == payload.role)).one_or_none()
+
+    if not role:
+        raise HTTPException(status_code=400, detail={"error_code": "invalid_role", "message": "Role not found"})
+    
+    user = User(
+        username=payload.username,
+        email=payload.email,
+        full_name=payload.full_name,
+        is_active=True,
+        token_version=1
+    )
+
+    user.roles.append(role)
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    session.refresh(user, attribute_names=["roles"])
+    return APIResponse(status_code=201, message="Registered successfully", data=_issue_tokens(user))
+
+@router.post("/login", response_model=APIResponse[TokenPair])
+def login(payload: LoginRequest, session: Session = Depends(get_db)) -> APIResponse[TokenPair]:
+    user = session.exec(
+        select(User).options(selectinload(User.roles)).where(User.email == payload.email)
+    ).one_or_none()
+
+    if not user or verify_password(payload.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail={"error_code": "invalid_credentials", "message": "Invalid email or password"})
+    if not user.roles:
+        raise HTTPException(status_code=403, detail={"error_code": "role_not_assigned", "message": "User has no roles"})
+    
+    return APIResponse(status_code=201, message="Login success", data=_issue_tokens(user))
+
+@router.post("/refresh", response_model=APIResponse[TokenPair])
+def refresh(payload: RefreshRequest, session: Session = Depends(get_db)) -> APIResponse[TokenPair]:
+    try:
+        claims = decode_token(payload.refresh_token, refresh=True)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail={"error_code": "invalid_token", "message": "Invalid refresh token"}) from e
+    if claims.get("typ") != TokenType.REFRESH:
+        raise HTTPException(status_code=401, detail={"error_code": "invalid_token", "message": "Refresh token required"})
+    
+    user = session.exec(
+        select(User).options(selectinload(User.roles)).where(User.id == int(claims["sub"]))
+    ).one_or_none()
+
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail={"error_code": "user_inactive", "message": "User inactive"})
+    if user.token_version != claims.get("token_version"):
+        raise HTTPException(status_code=403, detail={"error_code": "token_revoked", "message": "Token revoked"})
+    
+    user.token_version += 1
+    user.updated_at = datetime.now(timezone.utc)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    session.refresh(user, attribute_names=["roles"])
+    return APIResponse(status_code=200, message="Token refreshed", data=_issue_tokens(user))
+
+@router.post("/logout", response_model=APIResponse[dict])
+def logout(current_user: User = Depends(GetUser), session: Session = Depends(get_db)) -> APIResponse[dict]:
+    current_user.token_version += 1
+    current_user.updated_at = datetime.now(timezone.utc)
+
+    session.add(current_user)
+    session.commit()
+
+    return APIResponse(status_code=200, message="Logged out", data={"token_version": current_user.token_version})

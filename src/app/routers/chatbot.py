@@ -7,7 +7,9 @@ from sqlmodel import Session
 from database import get_db
 from models.role import Role, UserRole
 from models.user import User
+
 from schemas.state import State
+from schemas.common import APIResponse
 
 from agents.graph import GraphBuilder, build_chatbot_graph
 from agents.models import GroqModel, GroqModelStructured
@@ -22,7 +24,7 @@ def get_session_id(session_id: Optional[str] = Cookie(None)) -> str:
         session_id = str(uuid.uuid4())
     return session_id
 
-@router.post("/query", response_model=State)
+@router.post("/query", response_model=APIResponse[State])
 def ask_chatbot(
     state: State,
     response: Response,
@@ -42,5 +44,5 @@ def ask_chatbot(
     }
 
     graph = build_chatbot_graph()
-    result_state = graph.invoke(state, config=config)
-    return result_state
+    result_state: State = graph.invoke(state, config=config)
+    return APIResponse(status_code=201, message="Generated response", data=result_state)

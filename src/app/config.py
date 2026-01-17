@@ -13,8 +13,16 @@ class Settings(BaseSettings):
 
     ADMIN_EMAILS: str
     ADMIN_PASS: str
+
+    JWT_SECRET_KEY: str
+    JWT_REFRESH_KEY: str
+    JWT_HASHING_SCHEME: str
+    ACCESS_EXPIRE: int
+    REFRESH_EXPIRE: int
+    PASSWORD_HASHING_SCHEME: str
     
     GROQ_API_KEY: str
+    OPEN_ROUTER_API_KEY: str
     
     ALLOWED_ORIGINS: str
 
