@@ -1,9 +1,13 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from threading import Lock
 
 import logging
 
 from security.jwt import decode_token
+
+from agents.graph import build_chatbot_graph
 
 from routers import chatbot, auth
 
@@ -12,12 +16,20 @@ from config import get_settings
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.chatbot_resources = None
+
+    yield
+
+
 app = FastAPI(
     title="KASBI API",
     description="API untuk chatbot KASBI",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 app.add_middleware(

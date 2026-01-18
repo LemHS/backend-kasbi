@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     ACCESS_EXPIRE: int
     REFRESH_EXPIRE: int
     PASSWORD_HASHING_SCHEME: str
+
+    VECTOR_DB_DIRECTORY: str
+    EMBEDDING_MODEL: str
+    RERANK_MODEL: str
     
     GROQ_API_KEY: str
     OPEN_ROUTER_API_KEY: str

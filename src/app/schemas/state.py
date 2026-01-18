@@ -4,9 +4,9 @@ from pydantic import BaseModel, Field
 
 from langchain_core.documents import Document
 
-class State(BaseModel):
+class ChatbotState(BaseModel):
     query: str = Field(..., description="Chatbot query from user")
-    context: Optional[List[Document]] = Field(
+    context: Optional[List[str]] = Field(
         default_factory=list, description="List of context documents retrieved for the query"
     )
     answer: Optional[str] = Field(None, description="Chatbot's answer to the query")

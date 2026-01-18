@@ -1,7 +1,9 @@
 from langgraph.graph import StateGraph, START, END
-from agents.prompts import GROQ_PROMPT_TEMPLATE
+from agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
+from agents.retriever import BaseRetriever
 
-from schemas.state import State
+from schemas.state import ChatbotState
+
 
 class GraphBuilder():
     def __init__(
@@ -10,7 +12,8 @@ class GraphBuilder():
     ):
         
         self.config = config
-        self.graph_builder = StateGraph(State)
+        self.graph_builder = StateGraph(ChatbotState)
+        self.retriever = BaseRetriever(k_rerank=2)
 
     def compile_graph(self):
         return self.graph_builder.compile()
@@ -46,18 +49,26 @@ class GraphBuilder():
 
     def simple_node(
             self,
-            state: State,
+            state: ChatbotState,
             config
     ):
         message = state.query
-        prompt_template = GROQ_PROMPT_TEMPLATE
-        prompt_format = config["configurable"].get("prompt_format", {})
+        system_template = GROQ_SYSTEM_TEMPLATE
+        user_template = GROQ_USER_TEMPLATE
+        
+        context = self.retriever.semantic_retrieve(message, rerank=True)
+        context_str = "\n\n".join(context)
 
-        response = config["configurable"]["llm"].invoke(message, prompt_template, prompt_format)
+        response = config["configurable"]["llm"].invoke(
+            message, 
+            system_template, 
+            user_template, 
+            {"context": context_str, "question": message}
+        )
 
-        return {"answer": response}
+        return {"answer": response, "context": context}
     
-    def invoke_graph(self, initial_state: State):
+    def invoke_graph(self, initial_state: ChatbotState):
         return self.graph_builder.invoke(initial_state)
     
 
@@ -68,4 +79,4 @@ def build_chatbot_graph(config: dict = None) -> StateGraph:
     graph_builder.add_edge("simple_node", END)
     graph = graph_builder.compile_graph()
 
-    return graph
+    return graph, graph_builder.retriever, graph_builder.retriever.vector_db

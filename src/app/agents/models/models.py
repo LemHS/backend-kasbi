@@ -21,14 +21,15 @@ class GroqModel():
     def invoke(
             self,
             message: str,
-            prompt_template: str,
+            system_template: str,
+            user_template: str,
             prompt_format: dict = {},
     ):
         
         template = ChatPromptTemplate(
             [
-                ("system", prompt_template),
-                ("user", message),
+                ("system", system_template),
+                ("user", user_template),
             ]
         )
 
@@ -54,14 +55,15 @@ class GroqModelStructured():
     def invoke(
             self,
             message: str,
-            prompt_template: str,
+            system_template: str,
+            user_template: str,
             prompt_format: dict = {},
     ):
         
         template = ChatPromptTemplate(
             [
-                ("system", prompt_template),
-                ("user", message),
+                ("system", system_template),
+                ("user", user_template),
             ]
         )
 
