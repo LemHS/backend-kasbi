@@ -21,7 +21,7 @@ class GetUser():
             self,
             credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
     ) -> User:
-        return self.get_current_user()
+        return self.get_current_user(credentials)
 
     def get_current_user(
             self,
