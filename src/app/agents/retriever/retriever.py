@@ -3,6 +3,7 @@ from langchain_community.document_compressors import FlashrankRerank
 from langchain_core.documents import Document
 
 from typing import Union, List
+from pathlib import Path
 
 from agents.database import ChromaVectorDatabase
 
@@ -15,7 +16,7 @@ class BaseRetriever():
             self,
             k: int = 50,
             k_rerank: int = 15,
-            db_directory: str = settings.VECTOR_DB_DIRECTORY,
+            db_directory: Path = settings.VECTOR_DB_DIRECTORY,
             embedding_model: str = settings.EMBEDDING_MODEL,
             rerank_model: str = settings.RERANK_MODEL
     ):

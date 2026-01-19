@@ -42,8 +42,12 @@ class Settings(BaseSettings):
     def parse_allowed_origins(cls, v: str) -> List[str]:
         return v.split(",") if v else []
     
+    @field_validator("VECTOR_DB_DIRECTORY")
+    def parse_allowed_vector_db_directory(cls, v: str) -> Path:
+        return Path(v).resolve()
+    
     class Config:
-        env_file = Path(__file__).resolve().parents[2] / ".env"
+        env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
 
