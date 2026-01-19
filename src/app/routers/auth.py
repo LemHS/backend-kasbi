@@ -84,7 +84,7 @@ def refresh(payload: RefreshRequest, session: Session = Depends(get_db)) -> APIR
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail={"error_code": "user_inactive", "message": "User inactive"})
     if user.token_version != claims.get("token_version"):
-        raise HTTPException(status_code=403, detail={"error_code": "token_revoked", "message": "Token revoked"})
+        raise HTTPException(status_code=401, detail={"error_code": "token_revoked", "message": "Token revoked"})
     
     user.token_version += 1
     user.updated_at = datetime.now(timezone.utc)
