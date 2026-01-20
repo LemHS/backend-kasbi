@@ -2,11 +2,12 @@ from datetime import datetime, timezone
 from typing import Optional, TYPE_CHECKING, List
 from sqlmodel import SQLModel, Field, Relationship
 
-from models.base import TimestampedModel, IDModel
-from models.role import UserRole
+from app.models.base import TimestampedModel, IDModel
+from app.models.role import UserRole
 
 if TYPE_CHECKING:
     from models.role import Role
+    from models.document import Document
 
 class User(IDModel, TimestampedModel, table=True):
     __tablename__ = "users"
@@ -20,3 +21,4 @@ class User(IDModel, TimestampedModel, table=True):
     last_password_change: Optional[datetime] = Field(default=None)
 
     roles: List["Role"] = Relationship(back_populates="users", link_model=UserRole)
+    documents: List["Document"] = Relationship(back_populates="user")

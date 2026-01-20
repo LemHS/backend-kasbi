@@ -5,9 +5,9 @@ from langchain_core.documents import Document
 from typing import Union, List
 from pathlib import Path
 
-from agents.database import ChromaVectorDatabase
+from app.agents.database import ChromaVectorDatabase
 
-from config import get_settings
+from app.config import get_settings
 
 settings = get_settings()
 

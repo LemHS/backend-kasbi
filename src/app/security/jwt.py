@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import jwt
 
-from config import get_settings
+from app.config import get_settings
 
 settings = get_settings()
 

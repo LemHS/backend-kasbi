@@ -3,7 +3,7 @@ import os
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import get_settings
+from app.config import get_settings
 
 settings = get_settings()
 

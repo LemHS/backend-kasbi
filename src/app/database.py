@@ -1,6 +1,6 @@
 from sqlmodel import create_engine, SQLModel, Session
 
-from config import get_settings
+from app.config import get_settings
 
 settings = get_settings()
 engine = create_engine(

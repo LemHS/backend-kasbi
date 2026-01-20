@@ -4,14 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
-from database import get_db
-from models.role import Role
-from models.user import User
-from schemas.auth import LoginRequest, RefreshRequest, RegisterRequest, TokenPair
-from schemas.common import APIResponse
-from security.dependencies import GetUser
-from security.jwt import TokenType, create_access_token, create_refresh_token, decode_token
-from security.passwords import hash_password, verify_password
+from app.database import get_db
+from app.models.role import Role
+from app.models.user import User
+from app.schemas.auth import LoginRequest, RefreshRequest, RegisterRequest, TokenPair
+from app.schemas.common import APIResponse
+from app.security.dependencies import GetUser
+from app.security.jwt import TokenType, create_access_token, create_refresh_token, decode_token
+from app.security.passwords import hash_password, verify_password
 
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 

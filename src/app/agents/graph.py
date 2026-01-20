@@ -1,8 +1,8 @@
 from langgraph.graph import StateGraph, START, END
-from agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
-from agents.retriever import BaseRetriever
+from app.agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
+from app.agents.retriever import BaseRetriever
 
-from schemas.state import ChatbotState
+from app.schemas.state import ChatbotState
 
 
 class GraphBuilder():

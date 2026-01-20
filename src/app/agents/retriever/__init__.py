@@ -1,1 +1,1 @@
-from agents.retriever.retriever import BaseRetriever
+from app.agents.retriever.retriever import BaseRetriever

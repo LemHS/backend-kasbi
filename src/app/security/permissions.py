@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException
 
-from models.user import User
-from security.dependencies import GetUser
+from app.models.user import User
+from app.security.dependencies import GetUser
 
 class RequireRole:
     def __init__(self, *roles: str) -> None:

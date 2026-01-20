@@ -5,20 +5,20 @@ from threading import Lock
 
 import logging
 
-from security.jwt import decode_token
+from app.security.jwt import decode_token
 
-from agents.graph import build_chatbot_graph
+from app.agents import ChatbotResources
 
-from routers import chatbot, auth
+from app.routers import chatbot, auth, admin
 
-from config import get_settings
+from app.config import get_settings
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.chatbot_resources = None
+    app.state.chatbot_resources = {}
 
     yield
 
@@ -56,6 +56,7 @@ async def attach_jwt_claims(request: Request, call_next):
 
 app.include_router(chatbot.router)
 app.include_router(auth.router)
+app.include_router(admin.router)
 
 if __name__ == "__main__":
     import uvicorn

@@ -4,18 +4,18 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Response, BackgroundTasks, Request
 from sqlmodel import Session
 
-from database import get_db
-from models.role import Role, UserRole
-from models.user import User
+from app.database import get_db
+from app.models.role import Role, UserRole
+from app.models.user import User
 
-from schemas.state import ChatbotState
-from schemas.common import APIResponse
+from app.schemas.state import ChatbotState
+from app.schemas.common import APIResponse
 
-from security.permissions import RequireRole
+from app.security.permissions import RequireRole
 
-from agents import instansiate_chatbot_resources
-from agents.models import GroqModel, GroqModelStructured
-from agents.retriever import BaseRetriever
+from app.agents import instansiate_chatbot_resources
+from app.agents.models import GroqModel, GroqModelStructured
+from app.agents.retriever import BaseRetriever
 
 router = APIRouter(
     prefix="/v1/chatbot",
@@ -47,6 +47,6 @@ def ask_chatbot(
         }
     }
 
-    graph, retriever, vector_db = instansiate_chatbot_resources(request.app)
+    graph = instansiate_chatbot_resources(request.app)["chatbot_graph"]
     result_state: ChatbotState = graph.invoke(state, config=config)
     return APIResponse(status_code=201, message="Generated response", data=result_state)

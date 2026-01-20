@@ -18,3 +18,4 @@ KASBI  SOURCE/
 
 # Chroma DB TEMPORARY
 chroma_db/
+databse.db

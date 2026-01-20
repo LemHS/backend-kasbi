@@ -3,9 +3,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
-from database import get_db
-from models.user import User
-from security.jwt import TokenType, decode_token, JWTRequest
+from app.database import get_db
+from app.models.user import User
+from app.security.jwt import TokenType, decode_token, JWTRequest
 
 bearer_scheme = HTTPBearer(auto_error=False)
 

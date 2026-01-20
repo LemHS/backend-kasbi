@@ -3,7 +3,7 @@ from passlib.context import CryptContext
 from passlib.exc import MissingBackendError
 import hashlib
 
-from config import get_settings
+from app.config import get_settings
 
 @lru_cache
 def _hash_function() -> CryptContext:

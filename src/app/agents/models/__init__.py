@@ -1,1 +1,1 @@
-from agents.models.models import GroqModel, GroqModelStructured
+from app.agents.models.models import GroqModel, GroqModelStructured
