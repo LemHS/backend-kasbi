@@ -26,7 +26,7 @@ def run():
                     username=data["username"],
                     email=data["email"],
                     hashed_password=data["hashed_password"],
-                    full_name=data["full_name"],
+                    full_name=data["fullname"],
                     token_version=1,
                     is_active=True
                 ))
