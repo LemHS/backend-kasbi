@@ -47,23 +47,110 @@ class GraphBuilder():
             to_node,
         )
 
+    # def simple_node(
+    #         self,
+    #         state: ChatbotState,
+    #         config
+    # ):
+    #     message = state.query
+    #     system_template = GROQ_SYSTEM_TEMPLATE
+    #     user_template = GROQ_USER_TEMPLATE
+        
+    #     context = self.retriever.semantic_retrieve(message, rerank=True)
+    #     context_str = "\n\n".join(context)
+
+    #     response = config["configurable"]["llm"].invoke(
+    #         message, 
+    #         system_template, 
+    #         user_template, 
+    #         {"context": context_str, "question": message}
+    #     )
+
+    #     return {"answer": response, "context": context}
+
     def simple_node(
-            self,
-            state: ChatbotState,
+            self, 
+            state: ChatbotState, 
             config
     ):
         message = state.query
-        system_template = GROQ_SYSTEM_TEMPLATE
-        user_template = GROQ_USER_TEMPLATE
-        
-        context = self.retriever.semantic_retrieve(message, rerank=True)
-        context_str = "\n\n".join(context)
+        llm = config["configurable"]["llm"]
 
-        response = config["configurable"]["llm"].invoke(
-            message, 
-            system_template, 
-            user_template, 
-            {"context": context_str, "question": message}
+        # --- 1. DEFINISI PROMPT ROUTER ---
+
+        router_system_template = """
+        Tugas Anda adalah mengklasifikasikan intent (tujuan) dari pertanyaan pengguna.
+        
+        Kategori Label:
+        1. "SEARCH": Jika pertanyaan berkaitan dengan Data Pendidikan, BPMP Papua, Kurikulum, Sekolah, Guru, Regulasi, Dapodik, atau Layanan Kantor.
+        2. "CHAT": Jika pengguna menyapa (Halo, Hai), bertanya identitas bot (Siapa kamu, Siapa Kasbi), atau bertanya cara penggunaan bot.
+        3. "OOT": Jika pertanyaan di luar topik pendidikan/kantor (misal: Politik, Resep Masakan, Film, Koding, Curhat Pribadi).
+
+        Instruksi Output:
+        Hanya berikan satu kata sebagai jawaban: SEARCH, CHAT, atau OOT.
+        Jangan berikan penjelasan tambahan.
+        """
+
+        # Template user untuk router cukup placeholder sederhana
+        router_user_template = "{question}"
+
+        # --- 2. EKSEKUSI ROUTER ---
+        # Memanggil llm.invoke sesuai struktur di models.py
+        try:
+            classification = llm.invoke(
+                message=message,                        # Argumen 1: message (formalitas)
+                system_template=router_system_template, # Argumen 2: Aturan Router
+                user_template=router_user_template,     # Argumen 3: Template Input
+                prompt_format={"question": message}     # Argumen 4: Data Input
+            )
+            
+            # cleaning hasil
+            classification = classification.strip().upper()
+            
+            # Safety check: paksa ke salah satu kategori valid
+            if "SEARCH" in classification: classification = "SEARCH"
+            elif "CHAT" in classification: classification = "CHAT"
+            elif "OOT" in classification: classification = "OOT"
+            else: classification = "SEARCH" # Default fallback
+
+        except Exception as e:
+            print(f"Router Error: {e}")
+            classification = "SEARCH" # Fallback jika error
+
+
+        # --- 3. LOGIKA PERCABANGAN (IF-ELSE) ---
+        context = []
+        
+        # CASE A: Out of Topic (OOT)
+        if classification == "OOT":
+            return {
+                "answer": "Mohon maaf, Kasbi hanya bisa menjawab pertanyaan seputar layanan BPMP Papua dan dunia pendidikan. Ada yang bisa dibantu terkait hal tersebut? 🙏", 
+                "context": []
+            }
+
+        # CASE B: Butuh Data (SEARCH)
+        elif classification == "SEARCH":
+            # Panggil Retrieval teman Anda
+            context = self.retriever.semantic_retrieve(message, rerank=True)
+        
+        # CASE C: Chat Santai (CHAT) -> Context dibiarkan kosong []
+        
+        
+        # --- 4. GENERATE JAWABAN AKHIR ---
+        # Siapkan string context
+        if context:
+            context_str = "\n\n".join(context)
+        else:
+            # Jika kategori CHAT, beri sinyal ke LLM bahwa tidak ada dokumen, 
+            # tapi dia boleh menjawab menggunakan pengetahuannya tentang dirinya sendiri (System Prompt)
+            context_str = "Tidak ada dokumen relevan. Jawablah berdasarkan identitas Anda sebagai Kasbi."
+        
+        # Panggil LLM lagi untuk jawaban final
+        response = llm.invoke(
+            message=message,
+            system_template=GROQ_SYSTEM_TEMPLATE, # Identitas Kasbi yang sudah Anda buat
+            user_template=GROQ_USER_TEMPLATE,     # Template Sandwich Defense
+            prompt_format={"context": context_str, "question": message}
         )
 
         return {"answer": response, "context": context}
