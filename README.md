@@ -25,6 +25,19 @@ Follow these steps to set up the project locally:
 
 4. **Make the .env file like the example .env.example**
 
+4. **Run migration**
+
+    ```bash
+	uv run alembic upgrade head
+	```
+
+4. **Run seeder**
+
+    ```bash
+	uv run python .\\scripts\\role_seed.py
+	uv run python .\\scripts\\admin_seed.py
+	```
+
 5. **Start the fastapi webservice**
 
     ```bash
