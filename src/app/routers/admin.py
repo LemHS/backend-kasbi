@@ -15,7 +15,7 @@ from app.schemas.admin import FileStatus
 from app.schemas.common import APIResponse
 
 from app.security.permissions import RequireRole
-from security.dependencies import GetUser
+from app.security.dependencies import GetUser
 
 from app.agents import instansiate_vector_db
 from app.agents.database import ChromaVectorDatabase
