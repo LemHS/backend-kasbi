@@ -23,7 +23,7 @@ def resources_exist(chatbot_resources: ChatbotResources, attrs: List[str]):
     exist = []
 
     for attr in attrs:
-        exist.append(getattr(chatbot_resources, attr, None) is not None)
+        exist.append(chatbot_resources.get(attr, None) is not None)
 
     return all(exist)
 
@@ -33,9 +33,9 @@ def instansiate_chatbot_resources(app: FastAPI) -> ChatbotResources:
             if not resources_exist(app.state.chatbot_resources, ["chatbot_graph", "retriever", "vector_db"]):
                 chatbot_graph, retriever, vector_db = build_chatbot_graph()
 
-    app.state.chatbot_resources["chatbot_graph"] = chatbot_graph
-    app.state.chatbot_resources["retriever"] = retriever
-    app.state.chatbot_resources["vector_db"] = vector_db
+                app.state.chatbot_resources["chatbot_graph"] = chatbot_graph
+                app.state.chatbot_resources["retriever"] = retriever
+                app.state.chatbot_resources["vector_db"] = vector_db
 
     return app.state.chatbot_resources
 
