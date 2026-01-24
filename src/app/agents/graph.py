@@ -1,9 +1,15 @@
 from langgraph.graph import StateGraph, START, END
-from app.agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
-from app.agents.retriever import BaseRetriever
+from agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
+from agents.retriever import BaseRetriever
 
-from app.schemas.state import ChatbotState
+from schemas.state import ChatbotState
 
+# MemorySaver unutk checkpoint di RAM, FINALnya nanti pakai database
+from langgraph.checkpoint.memory import MemorySaver
+
+# Placeholder import database (PostgreSQL):
+# from langgraph.checkpoint.postgres import PostgresSaver
+# from psycopg_pool import ConnectionPool
 
 class GraphBuilder():
     def __init__(
@@ -15,8 +21,16 @@ class GraphBuilder():
         self.graph_builder = StateGraph(ChatbotState)
         self.retriever = BaseRetriever(k_rerank=2)
 
+        # INITIALIZE checkpointer
+        self.checkpointer = MemorySaver()
+
+        # PLACEHOLDER PostGre
+        # DB_URI = "postgresql://user:password@localhost:5432/namadatabase"
+        # pool = ConnectionPool(conninfo=DB_URI, max_size=20)
+        # self.checkpointer = PostgresSaver(pool)
+
     def compile_graph(self):
-        return self.graph_builder.compile()
+        return self.graph_builder.compile(checkpointer=self.checkpointer)
 
     def add_node(
             self,
@@ -104,7 +118,7 @@ class GraphBuilder():
                 prompt_format={"question": message}     # Argumen 4: Data Input
             )
             
-            # cleaning hasil
+            # standarisasi hasil
             classification = classification.strip().upper()
             
             # Safety check: paksa ke salah satu kategori valid
@@ -137,7 +151,6 @@ class GraphBuilder():
         
         
         # --- 4. GENERATE JAWABAN AKHIR ---
-        # Siapkan string context
         if context:
             context_str = "\n\n".join(context)
         else:
@@ -155,8 +168,8 @@ class GraphBuilder():
 
         return {"answer": response, "context": context}
     
-    def invoke_graph(self, initial_state: ChatbotState):
-        return self.graph_builder.invoke(initial_state)
+    # def invoke_graph(self, initial_state: ChatbotState):
+    #     return self.graph_builder.invoke(initial_state)
     
 
 def build_chatbot_graph(config: dict = None) -> StateGraph:

@@ -44,6 +44,9 @@ def ask_chatbot(
             "llm": GroqModel(
                 model="llama-3.1-8b-instant",
             ),
+
+            # ID buat checkpointing
+            "thread_id": session_id
         }
     }
 
