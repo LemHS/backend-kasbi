@@ -1,8 +1,8 @@
 from langgraph.graph import StateGraph, START, END
-from agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
-from agents.retriever import BaseRetriever
+from app.agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
+from app.agents.retriever import BaseRetriever
 
-from schemas.state import ChatbotState
+from app.schemas.state import ChatbotState
 
 # MemorySaver unutk checkpoint di RAM, FINALnya nanti pakai database
 from langgraph.checkpoint.memory import MemorySaver
@@ -30,7 +30,7 @@ class GraphBuilder():
         # self.checkpointer = PostgresSaver(pool)
 
     def compile_graph(self):
-        return self.graph_builder.compile(checkpointer=self.checkpointer)
+        return self.graph_builder.compile()
 
     def add_node(
             self,
@@ -151,6 +151,7 @@ class GraphBuilder():
         
         
         # --- 4. GENERATE JAWABAN AKHIR ---
+        # Siapkan string context
         if context:
             context_str = "\n\n".join(context)
         else:
@@ -168,8 +169,8 @@ class GraphBuilder():
 
         return {"answer": response, "context": context}
     
-    # def invoke_graph(self, initial_state: ChatbotState):
-    #     return self.graph_builder.invoke(initial_state)
+    def invoke_graph(self, initial_state: ChatbotState):
+        return self.graph_builder.invoke(initial_state)
     
 
 def build_chatbot_graph(config: dict = None) -> StateGraph:
