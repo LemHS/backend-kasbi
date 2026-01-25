@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     REFRESH_EXPIRE: int
     PASSWORD_HASHING_SCHEME: str
 
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
+
     VECTOR_DB_DIRECTORY: str
     EMBEDDING_MODEL: str
     RERANK_MODEL: str

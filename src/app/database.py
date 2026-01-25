@@ -8,6 +8,8 @@ engine = create_engine(
     echo=settings.DEBUG,
 )
 
+def SessionLocal():
+    return Session(engine)
 
 def init_db() -> None:
     SQLModel.metadata.create_all(bind=engine)
