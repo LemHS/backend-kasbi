@@ -23,13 +23,13 @@ class ChromaVectorDatabase():
         self.persist_directory = persist_directory
         self.embed_model = HuggingFaceEmbeddings(
             model_name=model_name,
-            model_kwargs={
-                "device": "cuda"
-            },
-            encode_kwargs={
-                "batch_size": 32,
-                "normalize_embeddings": True,
-            },
+            # model_kwargs={
+            #     "device": "cuda"
+            # },
+            # encode_kwargs={
+            #     "batch_size": 32,
+            #     "normalize_embeddings": True,
+            # },
         )
         self.split_text = split_text
 

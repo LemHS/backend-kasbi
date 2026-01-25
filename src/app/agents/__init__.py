@@ -31,6 +31,8 @@ def instansiate_chatbot_resources(app: FastAPI) -> ChatbotResources:
     if not resources_exist(app.state.chatbot_resources, ["chatbot_graph", "retriever", "vector_db"]):
         with _chatbot_lock:
             if not resources_exist(app.state.chatbot_resources, ["chatbot_graph", "retriever", "vector_db"]):
+
+                print("initiating resources")
                 chatbot_graph, retriever, vector_db = build_chatbot_graph()
 
                 app.state.chatbot_resources["chatbot_graph"] = chatbot_graph
@@ -44,18 +46,26 @@ def instansiate_retriever(app: FastAPI) -> ChatbotResources:
     if not resources_exist(app.state.chatbot_resources, ["retriever"]):
         with _chatbot_lock:
             if not resources_exist(app.state.chatbot_resources, ["retriever"]):
+                print("initiating resources")
                 app.state.chatbot_resources["retriever"] = BaseRetriever(k_rerank=2)
 
     return app.state.chatbot_resources
 
 
-def instansiate_vector_db(app: FastAPI) -> ChatbotResources:
-    if not resources_exist(app.state.chatbot_resources, ["vector_db"]):
-        with _chatbot_lock:
-            if not resources_exist(app.state.chatbot_resources, ["vector_db"]):
-                app.state.chatbot_resources["vector_db"] = ChromaVectorDatabase(
+def instansiate_vector_db(app: FastAPI = None) -> ChatbotResources:
+    if app is not None:
+        if not resources_exist(app.state.chatbot_resources, ["vector_db"]):
+            with _chatbot_lock:
+                if not resources_exist(app.state.chatbot_resources, ["vector_db"]):
+                    print("initiating resources")
+                    app.state.chatbot_resources["vector_db"] = ChromaVectorDatabase(
+                        persist_directory=settings.VECTOR_DB_DIRECTORY, 
+                        model_name=settings.EMBEDDING_MODEL
+                    )
+
+        return app.state.chatbot_resources
+    else:
+        return ChromaVectorDatabase(
                     persist_directory=settings.VECTOR_DB_DIRECTORY, 
                     model_name=settings.EMBEDDING_MODEL
                 )
-
-    return app.state.chatbot_resources

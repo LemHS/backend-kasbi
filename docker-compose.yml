@@ -1,0 +1,40 @@
+# Source - https://stackoverflow.com/a
+# Posted by JPG, modified by community. See post 'Timeline' for change history
+# Retrieved 2026-01-22, License - CC BY-SA 4.0
+services:
+
+  redis:
+    image: redis:latest
+    container_name: rd01
+
+  webapp:
+    build: .
+    volumes:
+      - ./src/app/agents/database/KASBI_DOCUMENTS:/data
+      - hf_models:/models/huggingface
+    container_name: wa01
+    command: /entrypoint.sh
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    env_file:
+      - .env
+
+
+  celery:
+    build: .
+    user: celeryuser
+    volumes:
+      - ./src/app/agents/database/KASBI_DOCUMENTS:/data
+      - hf_models:/models/huggingface
+    container_name: cl01
+    command: /celery_entrypoint.sh
+    depends_on:
+      - redis
+    env_file:
+      - .env
+
+volumes:
+  hf_models:
+
