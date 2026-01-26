@@ -5,9 +5,9 @@ from sqlalchemy import pool
 from sqlmodel import SQLModel
 
 from alembic import context
-from models import User, Role, UserRole, Document
+from app.models import *
 
-from config import get_settings
+from app.config import get_settings
 
 settings = get_settings()
 
