@@ -25,6 +25,6 @@ class Chat(IDModel, TimestampedModel, table=True):
 
     user_query: str = Field(index=True, nullable=False, unique=True)
     answer: str = Field(index=True, nullable=False, unique=True)
-    thread_id: int = Field(index=True, foreign_key="threads.id", nullable=False)
+    thread_id: int = Field(index=True, foreign_key="threads.id", nullable=True)
 
     thread: "Thread" = Relationship(back_populates="chats")
