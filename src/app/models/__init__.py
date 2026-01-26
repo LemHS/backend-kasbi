@@ -1,3 +1,4 @@
 from app.models.document import Document
 from app.models.user import User
 from app.models.role import UserRole, Role
+from app.models.history import Thread, Chat

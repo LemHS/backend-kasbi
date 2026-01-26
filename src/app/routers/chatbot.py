@@ -2,16 +2,18 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Response, BackgroundTasks, Request
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.database import get_db
 from app.models.role import Role, UserRole
 from app.models.user import User
+from app.models.history import Thread, Chat
 
-from app.schemas.state import ChatbotState
+from app.schemas.chatbot import ChatbotState, ThreadResponse, ChatRequest, ChatResponse
 from app.schemas.common import APIResponse
 
 from app.security.permissions import RequireRole
+from app.security.dependencies import GetUser
 
 from app.agents import instansiate_chatbot_resources
 from app.agents.models import GroqModel, GroqModelStructured
@@ -29,15 +31,27 @@ def get_session_id(session_id: Optional[str] = Cookie(None)) -> str:
 
 @router.post("/query", response_model=APIResponse[ChatbotState])
 def ask_chatbot(
-    state: ChatbotState,
+    payload: ChatbotState,
     response: Response,
     background_tasks: BackgroundTasks,
     request: Request,
     session_id: str = Depends(get_session_id),
-    db: Session = Depends(get_db),
+    session: Session = Depends(get_db),
+    user: User = Depends(GetUser())
 ) -> APIResponse[ChatbotState]:
     
     response.set_cookie(key="session_id", value=session_id, httponly=True)
+
+    if payload.thread_id is None:
+        thread = Thread(
+            thread_title=payload.query,
+            user_id=user.id
+        )
+
+        session.add(thread)
+        session.commit()
+
+        payload.thread_id = thread.id
 
     config = {
         "configurable": {
@@ -48,5 +62,66 @@ def ask_chatbot(
     }
 
     graph = instansiate_chatbot_resources(request.app)["chatbot_graph"]
-    result_state: ChatbotState = graph.invoke(state, config=config)
+    result_state: ChatbotState = graph.invoke(payload, config=config)
+    chat = Chat(
+        user_query=payload.query,
+        answer = result_state.answer,
+        thread_id=payload.thread_id
+    )
+
+    session.add(chat)
+    session.commit()
+
     return APIResponse(status_code=201, message="Generated response", data=result_state)
+
+
+@router.get("/threads", response_model=APIResponse[ThreadResponse])
+def get_threads(
+    response: Response,
+    background_tasks: BackgroundTasks,
+    session_id: str = Depends(get_session_id),
+    session: Session = Depends(get_db),
+    user: User = Depends(GetUser()),
+) -> APIResponse[ChatbotState]:
+    
+    response.set_cookie(key="session_id", value=session_id, httponly=True)
+
+    threads = session.exec(select(Thread).where(Thread.user_id == user.id)).order_by(Thread.id).all()
+    return APIResponse(
+        status_code=200, 
+        message="Thread returned successfully", 
+        data={
+            "threads": [
+                {"thread_id": thread.id, "thread_title": thread.thread_title}
+                for thread in threads
+            ]
+        })
+
+
+@router.get("/history", response_model=APIResponse[ChatResponse])
+def chat_history(
+    thread_id: int,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    session_id: str = Depends(get_session_id),
+    session: Session = Depends(get_db),
+    user: User = Depends(GetUser()),
+) -> APIResponse[ChatbotState]:
+    
+    response.set_cookie(key="session_id", value=session_id, httponly=True)
+
+    thread = session.exec(select(Thread).where(Thread.id == thread_id, Thread.user_id == user.id)).one_or_none()
+    if thread is None:
+        raise HTTPException(status_code=404, detail={"error_code": "invalid_thread", "message": "Thread not found"})
+    
+    chats = session.exec(select(Chat).where(Chat.thread_id == thread_id)).order_by(Chat.id).all()
+    
+    return APIResponse(
+        status_code=200, 
+        message="Chat histories returned successfully", 
+        data={
+            "chats": [
+                {"user_query": chat.user_query, "answer": chat.answer}
+                for chat in chats
+            ]
+        })

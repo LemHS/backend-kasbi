@@ -4,7 +4,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from app.models.base import IDModel, TimestampedModel
 
 if TYPE_CHECKING:
-    from models.user import User
+    from app.models.user import User
 
 class UserRole(SQLModel, table=True):
     __tablename__ = "user_roles"
