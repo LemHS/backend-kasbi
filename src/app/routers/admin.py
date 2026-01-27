@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
+from fastapi import APIRouter, Depends, HTTPException, Cookie, Response, BackgroundTasks, Request, UploadFile, File
 from sqlmodel import Session, select
 
 from app.worker import celery_app
@@ -13,12 +13,11 @@ from app.database import get_db
 from app.models.document import Document
 from app.models.user import User
 
-from app.schemas.admin import FileStatus
+from app.schemas.admin import FileStatus, DocumentResponse
 from app.schemas.common import APIResponse
 
 from app.security.permissions import RequireRole
 from app.security.dependencies import GetUser
-
 
 @celery_app.task(name="embed_document")
 def _embed_document(document_id, file_path):
@@ -46,7 +45,6 @@ router = APIRouter(prefix="/v1/admin", tags=["Admin"], dependencies=[Depends(Req
 
 @router.post("/insertdoc", response_model=APIResponse[FileStatus], status_code=201)
 def insert_document(
-    request: Request,
     file: UploadFile = File(), 
     user: User = Depends(GetUser()), 
     session: Session = Depends(get_db),
@@ -74,3 +72,24 @@ def insert_document(
     _embed_document.delay(document.id, str(file_path))
 
     return APIResponse(status_code=201, message="Insert pending", data={"status": "pending"})
+
+@router.get("/documents", response_model=APIResponse[DocumentResponse])
+def get_documents(
+    session: Session = Depends(get_db),
+    offset: int = 0,
+    limit: int = 10,
+    descending: bool = True,
+) -> APIResponse[DocumentResponse]:
+
+    documents = session.exec(select(Document).order_by(
+        Document.filename.desc() if descending else Document.filename.asc()
+    ).offset(offset).limit(limit)).all()
+    return APIResponse(
+        status_code=200, 
+        message="Document returned successfully", 
+        data={
+            "documents": [
+                {"document_id": document.id, "document_name": document.filename}
+                for document in documents
+            ]
+        })

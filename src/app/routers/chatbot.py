@@ -82,7 +82,7 @@ def get_threads(
     session_id: str = Depends(get_session_id),
     session: Session = Depends(get_db),
     user: User = Depends(GetUser()),
-) -> APIResponse[ChatbotState]:
+) -> APIResponse[ThreadResponse]:
     
     response.set_cookie(key="session_id", value=session_id, httponly=True)
 
@@ -102,11 +102,10 @@ def get_threads(
 def chat_history(
     thread_id: int,
     response: Response,
-    background_tasks: BackgroundTasks,
     session_id: str = Depends(get_session_id),
     session: Session = Depends(get_db),
     user: User = Depends(GetUser()),
-) -> APIResponse[ChatbotState]:
+) -> APIResponse[ChatResponse]:
     
     response.set_cookie(key="session_id", value=session_id, httponly=True)
 
