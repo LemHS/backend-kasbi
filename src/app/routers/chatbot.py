@@ -60,7 +60,7 @@ def ask_chatbot(
             ),
 
             # ID buat checkpointing
-            "thread_id": session_id
+            "thread_id": str(payload.thread_id)
         }
     }
 

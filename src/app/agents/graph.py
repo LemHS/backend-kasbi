@@ -30,7 +30,7 @@ class GraphBuilder():
         # self.checkpointer = PostgresSaver(pool)
 
     def compile_graph(self):
-        return self.graph_builder.compile()
+        return self.graph_builder.compile(checkpointer=self.checkpointer)
 
     def add_node(
             self,
