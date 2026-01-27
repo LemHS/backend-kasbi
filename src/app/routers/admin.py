@@ -5,7 +5,9 @@ from pathlib import Path
 from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
-from sqlmodel import Session
+from sqlmodel import Session, select
+
+from app.worker import celery_app
 
 from app.database import get_db
 from app.models.document import Document
@@ -17,8 +19,27 @@ from app.schemas.common import APIResponse
 from app.security.permissions import RequireRole
 from app.security.dependencies import GetUser
 
-from app.agents import instansiate_vector_db
-from app.agents.database import ChromaVectorDatabase
+
+@celery_app.task(name="embed_document")
+def _embed_document(document_id, file_path):
+    from app.database import SessionLocal
+    from app.models.document import Document
+    from app.agents import instansiate_vector_db
+
+    session = SessionLocal()
+
+    try:
+        vector_db = instansiate_vector_db()
+        vector_db.insert_documents([Path(file_path)])
+
+        document = session.get(Document, document_id)
+        document.status = "success"
+
+        session.commit()
+    finally:
+        session.close()
+
+
 
 router = APIRouter(prefix="/v1/admin", tags=["Admin"], dependencies=[Depends(RequireRole("admin"))])
 
@@ -32,10 +53,13 @@ def insert_document(
 ):
     
     safe_name = f"{uuid.uuid4()}_{file.filename}"
-    base_dir = Path("agents") / "database" / "KASBI_DOCUMENTS"
+    base_dir = Path("/data")
     base_dir.mkdir(parents=True, exist_ok=True)
 
     file_path = base_dir / safe_name
+
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
 
     document = Document(
         filename=safe_name,
@@ -47,8 +71,6 @@ def insert_document(
     session.add(document)
     session.commit()
 
-    vector_db = instansiate_vector_db(request.app)["vector_db"]
-
-    vector_db.insert_documents([file_path])
+    _embed_document.delay(document.id, str(file_path))
 
     return APIResponse(status_code=201, message="Insert pending", data={"status": "pending"})

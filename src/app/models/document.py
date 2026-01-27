@@ -7,7 +7,7 @@ from app.models.base import TimestampedModel, IDModel
 
 
 if TYPE_CHECKING:
-    from models.user import User
+    from app.models.user import User
 
 class DocumentStatus(str, Enum):
     pending = "pending"

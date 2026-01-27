@@ -25,7 +25,7 @@ class BaseRetriever():
             model_name=embedding_model
         )
 
-        self.compressor = FlashrankRerank(top_n=k_rerank)
+        self.compressor = FlashrankRerank(top_n=k_rerank, model=rerank_model)
         
         self.retriever = self.vector_db.get_retriever(k=k, fetch_k=int(k*1.5), lambda_mult=0.7)
 

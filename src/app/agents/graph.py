@@ -2,7 +2,7 @@ from langgraph.graph import StateGraph, START, END
 from app.agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
 from app.agents.retriever import BaseRetriever
 
-from app.schemas.state import ChatbotState
+from app.schemas.chatbot import ChatbotState
 
 # MemorySaver unutk checkpoint di RAM, FINALnya nanti pakai database
 from langgraph.checkpoint.memory import MemorySaver
