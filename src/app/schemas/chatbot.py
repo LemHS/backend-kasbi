@@ -10,7 +10,7 @@ class ChatbotState(BaseModel):
         default_factory=list, description="List of context documents retrieved for the query"
     )
     answer: Optional[str] = Field(None, description="Chatbot's answer to the query")
-    thread_id: Optional[int]
+    thread_id: Optional[int] = Field(None, description="Thread id to continue from specific thread")
 
 class ThreadItem(BaseModel):
     thread_id: int

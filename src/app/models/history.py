@@ -23,8 +23,8 @@ class Thread(IDModel, TimestampedModel, table=True):
 class Chat(IDModel, TimestampedModel, table=True):
     __tablename__ = "chats"
 
-    user_query: str = Field(index=True, nullable=False, unique=True)
-    answer: str = Field(index=True, nullable=False, unique=True)
+    user_query: str = Field(index=True, nullable=False, unique=False)
+    answer: str = Field(index=True, nullable=False, unique=False)
     thread_id: int = Field(index=True, foreign_key="threads.id", nullable=True)
 
-    thread: "Thread" = Relationship(back_populates="chats")
+    thread: "Thread" = Relationship(back_populates="chat")
