@@ -1,8 +1,8 @@
-"""chat_history_and_thread_table
+"""chat_history_and_thread
 
-Revision ID: 769c89e287c7
+Revision ID: 10a86823dfde
 Revises: 85a54d113388
-Create Date: 2026-01-26 10:59:31.252676
+Create Date: 2026-01-28 21:43:22.030024
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '769c89e287c7'
+revision: str = '10a86823dfde'
 down_revision: Union[str, None] = '85a54d113388'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -39,13 +39,13 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_query', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('answer', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('thread_id', sa.Integer(), nullable=False),
+    sa.Column('thread_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['thread_id'], ['threads.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_chats_answer'), 'chats', ['answer'], unique=True)
+    op.create_index(op.f('ix_chats_answer'), 'chats', ['answer'], unique=False)
     op.create_index(op.f('ix_chats_thread_id'), 'chats', ['thread_id'], unique=False)
-    op.create_index(op.f('ix_chats_user_query'), 'chats', ['user_query'], unique=True)
+    op.create_index(op.f('ix_chats_user_query'), 'chats', ['user_query'], unique=False)
     # ### end Alembic commands ###
 
 

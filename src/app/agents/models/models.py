@@ -49,8 +49,8 @@ class OpenRouterModel():
         self.temperature = temperature
         
         self.llm = ChatOpenAI(
-            api_key=settings.OPENROUTER_API_KEY,
-            base_url=settings.OPENROUTER_BASE_URL,
+            api_key=settings.OPEN_ROUTER_API_KEY,
+            base_url="https://openrouter.ai/api/v1",
             model=model,
             temperature=temperature,
             # Header opsional

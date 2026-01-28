@@ -19,6 +19,10 @@ DEFAULT_ADMIN = [
 
 def run():
     with Session(engine) as session:
+        admin_role = session.exec(
+            select(Role).where(Role.name == "admin")
+        ).one_or_none()
+
         existing_emails = {user.email for user in session.exec(select(User)).all()}
         for data in DEFAULT_ADMIN:
             if data["email"] not in existing_emails:
@@ -27,6 +31,7 @@ def run():
                     email=data["email"],
                     hashed_password=data["hashed_password"],
                     full_name=data["fullname"],
+                    roles=[admin_role],
                     token_version=1,
                     is_active=True
                 ))

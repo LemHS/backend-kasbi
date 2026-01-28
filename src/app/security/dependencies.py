@@ -11,16 +11,17 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 class GetUser():
     def __init__(
-        self,
-        session: Session = Depends(get_db)
+            self
     ):
-        
-        self.session = session
+        pass
 
     def __call__(
             self,
             credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+            session: Session = Depends(get_db)
     ) -> User:
+        
+        self.session = session
         return self.get_current_user(credentials)
 
     def get_current_user(
@@ -32,7 +33,7 @@ class GetUser():
         
         payload = self.check_token(credentials)
         token_version = payload.get("token_version")
-        user_id = payload.get("user_id")
+        user_id = payload.get("sub")
         user = self.check_user(user_id)
 
         if user.token_version != token_version:
