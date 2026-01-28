@@ -32,7 +32,6 @@ class GetUser():
             raise HTTPException(status_code=401, detail={"error_code": "auth_required", "message": "Authorization header missing"})
         
         payload = self.check_token(credentials)
-        print(payload)
         token_version = payload.get("token_version")
         user_id = payload.get("sub")
         user = self.check_user(user_id)
