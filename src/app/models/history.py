@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class Thread(IDModel, TimestampedModel, table=True):
     __tablename__ = "threads"
 
-    thread_title: str = Field(index=True, nullable=False, unique=True)
+    thread_title: str = Field(nullable=False, unique=False)
     user_id: int = Field(index=True, foreign_key="users.id", nullable=False)
 
     user: "User" = Relationship(back_populates="threads")

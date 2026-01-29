@@ -16,7 +16,7 @@ from app.security.permissions import RequireRole
 from app.security.dependencies import GetUser
 
 from app.agents import instansiate_chatbot_resources
-from app.agents.models import GroqModel, GroqModelStructured
+from app.agents.models import GroqModel, GroqModelStructured, OpenRouterModel
 from app.agents.retriever import BaseRetriever
 
 router = APIRouter(
@@ -55,9 +55,10 @@ def ask_chatbot(
 
     config = {
         "configurable": {
-            "llm": GroqModel(
-                model="llama-3.1-8b-instant",
+            "llm": OpenRouterModel(
+                model="tngtech/deepseek-r1t2-chimera:free",
             ),
+            "session": session,
 
             # ID buat checkpointing
             "thread_id": str(payload.thread_id)
@@ -68,7 +69,7 @@ def ask_chatbot(
     result_state: ChatbotState = graph.invoke(payload, config=config)
     chat = Chat(
         user_query=payload.query,
-        answer = result_state.answer,
+        answer = result_state["answer"],
         thread_id=payload.thread_id
     )
 
@@ -89,7 +90,7 @@ def get_threads(
     
     response.set_cookie(key="session_id", value=session_id, httponly=True)
 
-    threads = session.exec(select(Thread).where(Thread.user_id == user.id)).order_by(Thread.id).all()
+    threads = session.exec(select(Thread).where(Thread.user_id == user.id).order_by(Thread.id)).all()
     return APIResponse(
         status_code=200, 
         message="Thread returned successfully", 
@@ -116,7 +117,7 @@ def chat_history(
     if thread is None:
         raise HTTPException(status_code=404, detail={"error_code": "invalid_thread", "message": "Thread not found"})
     
-    chats = session.exec(select(Chat).where(Chat.thread_id == thread_id)).order_by(Chat.id).all()
+    chats = session.exec(select(Chat).where(Chat.thread_id == thread_id).order_by(Chat.id)).all()
     
     return APIResponse(
         status_code=200, 

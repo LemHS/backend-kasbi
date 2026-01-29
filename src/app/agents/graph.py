@@ -1,8 +1,11 @@
 from langgraph.graph import StateGraph, START, END
 from app.agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
+from app.agents.database import VectorDatabase
 from app.agents.retriever import BaseRetriever
 
 from app.schemas.chatbot import ChatbotState
+
+from app.config import get_settings
 
 # MemorySaver unutk checkpoint di RAM, FINALnya nanti pakai database
 from langgraph.checkpoint.memory import MemorySaver
@@ -19,7 +22,7 @@ class GraphBuilder():
         
         self.config = config
         self.graph_builder = StateGraph(ChatbotState)
-        self.retriever = BaseRetriever(k_rerank=2)
+        self.retriever = BaseRetriever(k_rerank=5)
 
         # INITIALIZE checkpointer
         self.checkpointer = MemorySaver()
@@ -88,6 +91,7 @@ class GraphBuilder():
             config
     ):
         message = state.query
+        session = config["configurable"]["session"]
         llm = config["configurable"]["llm"]
 
         # --- 1. DEFINISI PROMPT ROUTER ---
@@ -145,7 +149,7 @@ class GraphBuilder():
         # CASE B: Butuh Data (SEARCH)
         elif classification == "SEARCH":
             # Panggil Retrieval teman Anda
-            context = self.retriever.semantic_retrieve(message, rerank=True)
+            context = self.retriever.retrieve(session, message, rerank=True)
         
         # CASE C: Chat Santai (CHAT) -> Context dibiarkan kosong []
         
@@ -174,10 +178,13 @@ class GraphBuilder():
     
 
 def build_chatbot_graph(config: dict = None) -> StateGraph:
+    settings = get_settings()
+
+    vector_db = VectorDatabase(model_name=settings.EMBEDDING_MODEL)
     graph_builder = GraphBuilder(config=config)
     graph_builder.add_node("simple_node", "simple_node", "This is a custom state.")
     graph_builder.add_edge(START, "simple_node")
     graph_builder.add_edge("simple_node", END)
     graph = graph_builder.compile_graph()
 
-    return graph, graph_builder.retriever, graph_builder.retriever.vector_db
+    return graph, graph_builder.retriever, vector_db

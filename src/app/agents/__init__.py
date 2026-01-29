@@ -1,6 +1,6 @@
 from app.agents.graph import GraphBuilder, build_chatbot_graph
 from app.agents.retriever import BaseRetriever
-from app.agents.database import ChromaVectorDatabase
+from app.agents.database import VectorDatabase
 
 from app.config import get_settings
 
@@ -16,7 +16,7 @@ _chatbot_lock = Lock()
 class ChatbotResources(TypedDict):
     chatbot_graph: Any
     retriever: BaseRetriever
-    vector_db: ChromaVectorDatabase
+    vector_db: VectorDatabase
 
 
 def resources_exist(chatbot_resources: ChatbotResources, attrs: List[str]):
@@ -58,14 +58,8 @@ def instansiate_vector_db(app: FastAPI = None) -> ChatbotResources:
             with _chatbot_lock:
                 if not resources_exist(app.state.chatbot_resources, ["vector_db"]):
                     print("initiating resources")
-                    app.state.chatbot_resources["vector_db"] = ChromaVectorDatabase(
-                        persist_directory=settings.VECTOR_DB_DIRECTORY, 
-                        model_name=settings.EMBEDDING_MODEL
-                    )
+                    app.state.chatbot_resources["vector_db"] = VectorDatabase(model_name=settings.EMBEDDING_MODEL)
 
         return app.state.chatbot_resources
     else:
-        return ChromaVectorDatabase(
-                    persist_directory=settings.VECTOR_DB_DIRECTORY, 
-                    model_name=settings.EMBEDDING_MODEL
-                )
+        return VectorDatabase(model_name=settings.EMBEDDING_MODEL)

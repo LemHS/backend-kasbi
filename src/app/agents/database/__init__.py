@@ -1,1 +1,1 @@
-from app.agents.database.database import ChromaVectorDatabase
+from app.agents.database.database import VectorDatabase
