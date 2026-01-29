@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
-from typing import Optional, TYPE_CHECKING, List, Literal
+from typing import Optional, TYPE_CHECKING, List, Literal, Any
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
+from pgvector.sqlalchemy import Vector
 
 from app.models.base import TimestampedModel, IDModel
 
@@ -23,3 +24,14 @@ class Document(IDModel, TimestampedModel, table=True):
     status: DocumentStatus = Field(default="pending", nullable=False)
 
     user: "User" = Relationship(back_populates="documents")
+    document_vectors: "DocumentVector" = Relationship(back_populates="document")
+
+class DocumentVector(IDModel, TimestampedModel, table=True):
+    __tablename__ = "document_vectors"
+
+    embedding: Any = Field(sa_type=Vector(384))
+    content: str = Field(default=None, nullable=False)
+    document_id: int = Field(index=True, foreign_key="documents.id", nullable=False)
+
+    
+    document: "Document" = Relationship(back_populates="document_vectors")

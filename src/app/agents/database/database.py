@@ -1,36 +1,34 @@
 from typing import Sequence, Any, List
 from uuid import uuid4
+from pathlib import Path
+
+from fastapi import Depends
+from sqlmodel import Session, select
 
 from docling.document_converter import DocumentConverter
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
 
+from fastembed import TextEmbedding
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain_core.documents import Document
+from langchain_core.documents import Document as Doc
+
+from app.database import get_db
+from app.models.document import Document, DocumentVector
 
 
-class ChromaVectorDatabase():
+class VectorDatabase():
     def __init__(
-            self, 
-            persist_directory:str,
-            model_name:str = "BAAI/bge-m3",
-            split_text:bool = True,
-            chunk_size:int = 900,
-            chunk_overlap:int = 100,
+            self,
+            model_name: str = "BAAI/bge-m3",
+            split_text: bool = True,
+            chunk_size: int = 900,
+            chunk_overlap: int = 100,
     ):
-        self.persist_directory = persist_directory
-        self.embed_model = HuggingFaceEmbeddings(
-            model_name=model_name,
-            # model_kwargs={
-            #     "device": "cuda"
-            # },
-            # encode_kwargs={
-            #     "batch_size": 32,
-            #     "normalize_embeddings": True,
-            # },
-        )
+        self.embed_model = TextEmbedding(model_name=model_name)
         self.split_text = split_text
 
         if split_text:
@@ -39,50 +37,84 @@ class ChromaVectorDatabase():
                 chunk_overlap=chunk_overlap,
             ).from_tiktoken_encoder()
 
-        self.vector_db = Chroma(
-            collection_name="documents",
-            embedding_function=self.embed_model,
-            persist_directory=persist_directory,
-        )
+    def insert_documents(
+            self, 
+            session: Session, 
+            file_paths: Sequence[str], 
+            document_ids: Sequence[int]
+        ) -> List[Document]:
 
-    def insert_documents(self, file_paths: Sequence[str]) -> List[Document]:
         if getattr(self, "converter", None) is None:
             self._init_converter()
 
-        documents = self.converter.convert_all(file_paths)
-        documents = [Document(page_content=doc.document.export_to_text(), metadata={"path":path}) for doc, path in zip(documents, file_paths)]
+        documents = []
+
+        for path, document_id in zip(file_paths, document_ids):
+            try:  
+                doc = self.converter.convert(path)
+            except Exception as e:
+                document = session.exec(
+                    select(Document).where(Document.id == document_id)
+                ).one()
+
+                session.delete(document)
+                session.commit()
+            else:
+                new_path = Path("converted_docs").joinpath(*Path(path).parts[-1:]).with_suffix(".md")
+                new_path.parent.mkdir(parents=True, exist_ok=True)
+                text_content = doc.document.export_to_markdown()
+
+                with open(new_path, "w", encoding="utf-8") as f:
+                    f.write(text_content)
+
+                documents.append(Doc(page_content=text_content, metadata={"document_id": document_id}))
         
         split_documents = self.text_splitter.split_documents(documents)
 
-        uuids = [str(uuid4()) for i in range(len(split_documents))]
-        self.vector_db.add_documents(split_documents, ids=uuids)
+        for split_document in split_documents:
+            document = session.exec(
+                    select(Document).where(Document.id == split_document.metadata["document_id"])
+            ).one()
+            try:
+                vector_embed = self.embed_document(split_document.page_content)
+                document_vector = DocumentVector(
+                    embedding=vector_embed,
+                    content=split_document.page_content,
+                    document_id=split_document.metadata["document_id"]
+                )
+            except Exception as e:
+                document.status = "failed"
+
+                session.add(document)
+                session.commit()
+            else:
+                document.status = "done"
+
+                session.add(document_vector)
+                session.add(document)
+                session.commit()
 
         return documents
     
-    def get_retriever(self, k: int, fetch_k: int, lambda_mult: int):
-        return self.vector_db.as_retriever(
-            search_type="mmr",
-            search_kwargs={
-                "k": k,
-                "fetch_k": fetch_k,
-                "lambda_mult": lambda_mult,
-            }
-        )
+    def embed_document(self, page_content: str) -> List[int]:
+        vector_embed = list(self.embed_model.embed(page_content))
+
+        return vector_embed[0]
     
     def _init_converter(self) -> None:
-        accelerator_options = AcceleratorOptions(
-            device=AcceleratorDevice.CUDA,
-        )
+        # accelerator_options = AcceleratorOptions(
+        #     device=AcceleratorDevice.CUDA,
+        # )
 
-        pipeline_options = ThreadedPdfPipelineOptions(
-            ocr_batch_size=64,   
-            layout_batch_size=64,
-            table_batch_size=4,
-        )
+        # pipeline_options = ThreadedPdfPipelineOptions(
+        #     ocr_batch_size=64,   
+        #     layout_batch_size=64,
+        #     table_batch_size=4,
+        # )
 
         self.converter = DocumentConverter(
-            format_options={
-                "accelerator_options": accelerator_options,
-                "pipeline_options": pipeline_options
-            }
+            # format_options={
+            #     "accelerator_options": accelerator_options,
+            #     "pipeline_options": pipeline_options
+            # }
         )
