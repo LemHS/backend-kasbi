@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 from app.agents.prompts import GROQ_SYSTEM_TEMPLATE, GROQ_USER_TEMPLATE
 from app.agents.database import VectorDatabase
-from app.agents.retriever import BaseRetriever
+from app.agents.retriever import BaseRetriever, HybridRetriever, RerankRetriever
 
 from app.schemas.chatbot import ChatbotState
 
@@ -22,7 +22,7 @@ class GraphBuilder():
         
         self.config = config
         self.graph_builder = StateGraph(ChatbotState)
-        self.retriever = BaseRetriever(k_rerank=5)
+        self.retriever = RerankRetriever(k=15, k_rerank=2)
 
         # INITIALIZE checkpointer
         self.checkpointer = MemorySaver()
@@ -149,7 +149,7 @@ class GraphBuilder():
         # CASE B: Butuh Data (SEARCH)
         elif classification == "SEARCH":
             # Panggil Retrieval teman Anda
-            context = self.retriever.retrieve(session, message, rerank=True)
+            context = self.retriever.retrieve(session, message)
         
         # CASE C: Chat Santai (CHAT) -> Context dibiarkan kosong []
         

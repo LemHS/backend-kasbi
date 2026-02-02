@@ -2,9 +2,10 @@ from langchain_classic.retrievers.contextual_compression import ContextualCompre
 from fastembed import TextEmbedding
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 
-from typing import Union, List
+from typing import Union, List, Literal
 from pathlib import Path
 from sqlmodel import Session, select
+from sqlalchemy import text, bindparam, func
 
 from app.models.document import Document, DocumentVector
 from app.agents.database import VectorDatabase
@@ -28,51 +29,42 @@ class BaseRetriever():
     def __init__(
             self,
             k: int = 50,
-            k_rerank: int = 15,
+            rank_type: Literal["semantic", "lexical"] = "semantic",
             embedding_model: str = settings.EMBEDDING_MODEL,
-            rerank_model: str = settings.RERANK_MODEL
     ):
         self.k = k
         self.k_fetch = int(k * 1.5)
-        self.k_rerank = k_rerank
+        self.rank_type = rank_type
         self.embed_model = TextEmbedding(model_name=embedding_model)
-        self.reranker = TextCrossEncoder(model_name=rerank_model)
 
-    def retrieve(self, session: Session, query: str, rerank: bool) -> List[str]:
-        if rerank:
-            with timer("total_retrieve"):
-                with timer("semantic_retrieve"):
-                    document_contents = self._semantic_retrieve(session, query, self.k)
-                with timer("rerank"):
-                    document_contents = self._rerank(query, document_contents)
-        else:
+    def retrieve(self, session: Session, query: str) -> List[str]:
+        if self.rank_type == "semantic":
             with timer("semantic_retrieve"):
-                document_contents = self._semantic_retrieve(session, query, self.k_rerank)
+                documents = self._semantic_retrieve(session, query, self.k)
+        else:
+            with timer("lexical_retrieve"):
+                documents = self._lexical_retrieve(session, query, self.k)
 
-        return document_contents
+        documents_contents = [document[1] for document in documents]
+        return documents_contents
 
     def _semantic_retrieve(self, session: Session, query: str, k: int):
         embed_query = list(self.embed_model.query_embed(query))[0]
 
         documents = session.exec(
-            select(DocumentVector.content, DocumentVector.embedding).order_by(DocumentVector.embedding.cosine_distance(embed_query)).limit(self.k_fetch)
+            select(DocumentVector.id, DocumentVector.content, DocumentVector.dense_embedding).order_by(DocumentVector.dense_embedding.cosine_distance(embed_query)).limit(self.k_fetch)
         ).all()
 
-        document_embeddings = np.array([document[1] for document in documents])
+        document_embeddings = np.array([document[2] for document in documents])
         mmr_selected = self._mmr(np.array(embed_query), document_embeddings, k)
 
-        document_contents = [document[0] for document in documents]
-        document_contents = [document_contents[i] for i in mmr_selected]
+        documents = [documents[i] for i in mmr_selected]
+        documents = [(document[0], document[1]) for document in documents]
 
-        return document_contents
-        
-
-    def _rerank(self, query: str, document_contents: List[str]):
-        new_scores = self.reranker.rerank(query, document_contents)
-        ranking = [(i, score) for i, score in enumerate(new_scores)]
-        ranking.sort(key=lambda x: x[1], reverse=True)
-
-        return [document_contents[i] for i, score in ranking[:self.k_rerank]]
+        return documents
+    
+    def _lexical_retrieve(self, session: Session, query: str, k: int):
+        pass
     
 
     def _mmr(self, embed_query, doc_embeddings, k: int, lambda_mult: int = 0.5):
@@ -105,3 +97,78 @@ class BaseRetriever():
             candidates.remove(best)
 
         return selected
+
+
+class HybridRetriever(BaseRetriever):
+    def __init__(
+            self,
+            k: int = 50,
+            k_rrf: int = 5, 
+            rank_type: Literal["semantic", "lexical"] = "semantic",
+            embedding_model: str = settings.EMBEDDING_MODEL
+    ):
+        super().__init__(k, rank_type, embedding_model)
+        self.k_rrf = k_rrf
+
+    
+    def retrieve(self, session: Session, query: str):
+        with timer("semantic_retrieve"):
+            semantic_documents = self._semantic_retrieve(session, query, self.k)
+        with timer("lexical_retrieve"):
+            lexical_documents = self._lexical_retrieve(session, query, self.k)
+        with timer("rrf"):
+            documents_contents = self._rrf(session, semantic_documents, lexical_documents)
+
+        return documents_contents
+    
+    def _rrf(self, session: Session, *document_rankings, k = 60):
+        document_score = {}
+        for document_ranking in document_rankings:
+            for i, document in enumerate(document_ranking):
+                rank = i + 1
+                document_id = document[0]
+                score = 1 / (k + rank)
+                document_score[document_id] = (
+                    document_score.get(document_id, 0.0) + score
+                )
+
+        document_final_score = sorted(
+            document_score.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:self.k_rrf]
+
+        document_final_score = [document[0] for document in document_final_score]
+
+        documents = session.exec(select(DocumentVector.content).where(DocumentVector.id.in_(document_final_score))).all()
+
+        return documents
+    
+
+class RerankRetriever(BaseRetriever):
+    def __init__(
+            self, 
+            k = 50, 
+            k_rerank = 5,
+            rank_type = "semantic", 
+            embedding_model = settings.EMBEDDING_MODEL, 
+            rerank_model = settings.RERANK_MODEL
+    ):
+        super().__init__(k, rank_type, embedding_model)
+        
+        self.k_rerank = k_rerank
+        self.reranker = TextCrossEncoder(model_name=rerank_model)
+
+    def retrieve(self, session: Session, query: str):
+        document_contents = super().retrieve(session, query)
+        with timer("rerank"):
+            document_contents = self._rerank(query, document_contents)
+
+        return document_contents
+
+    def _rerank(self, query: str, document_contents: List[str]):
+        new_scores = self.reranker.rerank(query, document_contents)
+        ranking = [(i, score) for i, score in enumerate(new_scores)]
+        ranking.sort(key=lambda x: x[1], reverse=True)
+
+        return [document_contents[i] for i, score in ranking[:self.k_rerank]]
