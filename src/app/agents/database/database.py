@@ -78,7 +78,7 @@ class VectorDatabase():
             try:
                 vector_embed = self.embed_document(split_document.page_content)
                 document_vector = DocumentVector(
-                    embedding=vector_embed,
+                    dense_embedding=vector_embed,
                     content=split_document.page_content,
                     document_id=split_document.metadata["document_id"]
                 )

@@ -13,7 +13,7 @@ from app.database import get_db
 from app.models.document import Document
 from app.models.user import User
 
-from app.schemas.admin import FileStatus, DocumentResponse
+from app.schemas.admin import FileStatus, DocumentResponse, DeleteRequest
 from app.schemas.common import APIResponse
 
 from app.security.permissions import RequireRole
@@ -72,6 +72,24 @@ def insert_document(
     _embed_document(document.id, str(file_path))
 
     return APIResponse(status_code=201, message="Insert pending", data={"status": "pending"})
+
+@router.delete("/deldoc", response_model=APIResponse)
+def del_documents(
+    payload: DeleteRequest,
+    session: Session = Depends(get_db)
+) -> APIResponse:
+
+    documents = session.exec(
+        select(Document).where(Document.id == payload.document_id)
+    ).one()
+
+    session.delete(documents)
+    session.commit()
+
+    return APIResponse(
+        status_code=200, 
+        message="Document deleted successfully")
+
 
 @router.get("/documents", response_model=APIResponse[DocumentResponse])
 def get_documents(

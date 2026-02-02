@@ -1,8 +1,15 @@
 from pydantic import BaseModel, EmailStr, Field
+from typing import List, Optional, Dict
 
 class FileStatus(BaseModel):
     status: str
 
-class DocumentResponse(BaseModel):
-    document_id: str
+class DocumentItem(BaseModel):
+    document_id: int
     document_name: str
+
+class DocumentResponse(BaseModel):
+    document_items: List[DocumentItem]
+
+class DeleteRequest(BaseModel):
+    document_id: int

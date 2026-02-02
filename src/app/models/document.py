@@ -29,9 +29,9 @@ class Document(IDModel, TimestampedModel, table=True):
 class DocumentVector(IDModel, TimestampedModel, table=True):
     __tablename__ = "document_vectors"
 
-    embedding: Any = Field(sa_type=Vector(384))
+    dense_embedding: Any = Field(sa_type=Vector(384))
     content: str = Field(default=None, nullable=False)
-    document_id: int = Field(index=True, foreign_key="documents.id", nullable=False)
+    document_id: int = Field(index=True, foreign_key="documents.id", nullable=False, sa_column_kwargs={"ondelete": "CASCADE"})
 
     
     document: "Document" = Relationship(back_populates="document_vectors")

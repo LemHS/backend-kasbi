@@ -9,7 +9,7 @@ services:
 
 
   postgres:
-    image: postgres:16
+    image: postgres:17
     container_name: pg01
     restart: unless-stopped
     env_file:
@@ -22,6 +22,7 @@ services:
   webapp:
     build: .
     volumes:
+      - ./src:/app/src
       - ./src/app/agents/database/KASBI_DOCUMENTS:/data
       - hf_models:/models/huggingface
     container_name: wa01
@@ -39,6 +40,7 @@ services:
     build: .
     user: celeryuser
     volumes:
+      - ./src:/app/src
       - ./src/app/agents/database/KASBI_DOCUMENTS:/data
       - hf_models:/models/huggingface
     container_name: cl01
@@ -49,5 +51,6 @@ services:
       - .env
 
 volumes:
+  pgdata:
   hf_models:
 
