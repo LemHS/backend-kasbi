@@ -99,15 +99,15 @@ def get_documents(
     descending: bool = True,
 ) -> APIResponse[DocumentResponse]:
 
-    documents = session.exec(select(Document).order_by(
+    results = session.exec(select(Document, User).join(User, isouter=True).order_by(
         Document.filename.desc() if descending else Document.filename.asc()
     ).offset(offset).limit(limit)).all()
     return APIResponse(
         status_code=200, 
         message="Document returned successfully", 
         data={
-            "documents": [
-                {"document_id": document.id, "document_name": document.filename}
-                for document in documents
+            "document_items": [
+                {"document_id": document.id, "document_name": document.filename, "time_upload": document.created_at, "user": user.username}
+                for document, user in results
             ]
         })

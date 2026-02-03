@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional, TYPE_CHECKING, List, Literal, Any
 from enum import Enum
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship, Column, ForeignKey
 from pgvector.sqlalchemy import Vector
 
 from app.models.base import TimestampedModel, IDModel
@@ -24,14 +24,19 @@ class Document(IDModel, TimestampedModel, table=True):
     status: DocumentStatus = Field(default="pending", nullable=False)
 
     user: "User" = Relationship(back_populates="documents")
-    document_vectors: "DocumentVector" = Relationship(back_populates="document")
+    document_vectors: "DocumentVector" = Relationship(back_populates="document", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class DocumentVector(IDModel, TimestampedModel, table=True):
     __tablename__ = "document_vectors"
 
     dense_embedding: Any = Field(sa_type=Vector(384))
     content: str = Field(default=None, nullable=False)
-    document_id: int = Field(index=True, foreign_key="documents.id", nullable=False, sa_column_kwargs={"ondelete": "CASCADE"})
+    document_id: int = Field(sa_column=Column(
+            ForeignKey("documents.id", ondelete="CASCADE"),
+            index=True,
+            nullable=False,
+        )
+    )
 
     
     document: "Document" = Relationship(back_populates="document_vectors")

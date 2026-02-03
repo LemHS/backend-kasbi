@@ -7,7 +7,7 @@ import logging
 
 from app.security.jwt import decode_token
 
-from app.agents import ChatbotResources
+from app.agents import instansiate_chatbot_resources
 
 from app.routers import chatbot, auth, admin
 
@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.chatbot_resources = {}
+    instansiate_chatbot_resources(app)
 
     yield
 

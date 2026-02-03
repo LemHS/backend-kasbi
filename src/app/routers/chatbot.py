@@ -56,7 +56,7 @@ def ask_chatbot(
     config = {
         "configurable": {
             "llm": OpenRouterModel(
-                model="tngtech/deepseek-r1t2-chimera:free",
+                model="arcee-ai/trinity-large-preview:free",
             ),
             "session": session,
 

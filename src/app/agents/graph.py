@@ -14,6 +14,17 @@ from langgraph.checkpoint.memory import MemorySaver
 # from langgraph.checkpoint.postgres import PostgresSaver
 # from psycopg_pool import ConnectionPool
 
+import numpy as np
+import time
+from contextlib import contextmanager
+
+@contextmanager
+def timer(name: str):
+    start = time.perf_counter()
+    yield
+    end = time.perf_counter()
+    print(f"[TIMER] {name}: {(end - start)*1000:.2f} ms")
+
 class GraphBuilder():
     def __init__(
             self,
@@ -115,12 +126,13 @@ class GraphBuilder():
         # --- 2. EKSEKUSI ROUTER ---
         # Memanggil llm.invoke sesuai struktur di models.py
         try:
-            classification = llm.invoke(
-                message=message,                        # Argumen 1: message (formalitas)
-                system_template=router_system_template, # Argumen 2: Aturan Router
-                user_template=router_user_template,     # Argumen 3: Template Input
-                prompt_format={"question": message}     # Argumen 4: Data Input
-            )
+            with timer("classification_llm"):
+                classification = llm.invoke(
+                    message=message,                        # Argumen 1: message (formalitas)
+                    system_template=router_system_template, # Argumen 2: Aturan Router
+                    user_template=router_user_template,     # Argumen 3: Template Input
+                    prompt_format={"question": message}     # Argumen 4: Data Input
+                )
             
             # standarisasi hasil
             classification = classification.strip().upper()
@@ -164,12 +176,13 @@ class GraphBuilder():
             context_str = "Tidak ada dokumen relevan. Jawablah berdasarkan identitas Anda sebagai Kasbi."
         
         # Panggil LLM lagi untuk jawaban final
-        response = llm.invoke(
-            message=message,
-            system_template=GROQ_SYSTEM_TEMPLATE, # Identitas Kasbi yang sudah Anda buat
-            user_template=GROQ_USER_TEMPLATE,     # Template Sandwich Defense
-            prompt_format={"context": context_str, "question": message}
-        )
+        with timer("answer_llm"):
+            response = llm.invoke(
+                message=message,
+                system_template=GROQ_SYSTEM_TEMPLATE, # Identitas Kasbi yang sudah Anda buat
+                user_template=GROQ_USER_TEMPLATE,     # Template Sandwich Defense
+                prompt_format={"context": context_str, "question": message}
+            )
 
         return {"answer": response, "context": context}
     
