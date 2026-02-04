@@ -23,8 +23,9 @@ class ChatRequest(BaseModel):
     thread_id: int
 
 class ChatItem(BaseModel):
-    user_query: str
-    answer: str
+    role: str
+    message: str
+    created_at: datetime
 
 class ChatResponse(BaseModel):
     chats: List[ChatItem]
