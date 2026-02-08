@@ -4,7 +4,6 @@ from typing import Optional
 class RegisterRequest(BaseModel):
     username: str = Field(min_length=3)
     email: EmailStr
-    full_name: str = Field(min_length=3)
     password: str = Field(min_length=8)
     role: str = Field(default="user")
 

@@ -9,21 +9,24 @@ services:
 
 
   postgres:
-    image: postgres:17
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     container_name: pg01
     restart: unless-stopped
     env_file:
       - .env
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     ports:
       - "5432:5432"
 
   webapp:
     build: .
+    user: celeryuser
     volumes:
-      - ./src:/app/src
-      - ./src/app/agents/database/KASBI_DOCUMENTS:/data
+      - ./src:/backend/src
       - hf_models:/models/huggingface
     container_name: wa01
     command: /entrypoint.sh
@@ -40,8 +43,7 @@ services:
     build: .
     user: celeryuser
     volumes:
-      - ./src:/app/src
-      - ./src/app/agents/database/KASBI_DOCUMENTS:/data
+      - ./src:/backend/src
       - hf_models:/models/huggingface
     container_name: cl01
     command: /celery_entrypoint.sh

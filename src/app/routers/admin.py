@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Response, BackgroundTasks, Request, UploadFile, File
 from sqlmodel import Session, select
 
-# from app.worker import celery_app
+from app.worker import celery_app
 
 from app.database import get_db
 from app.models.document import Document
@@ -19,26 +19,7 @@ from app.schemas.common import APIResponse
 from app.security.permissions import RequireRole
 from app.security.dependencies import GetUser
 
-# @celery_app.task(name="embed_document")
-def _embed_document(document_id, file_path):
-    from app.database import SessionLocal
-    from app.models.document import Document
-    from app.agents import instansiate_vector_db
-
-    session = SessionLocal()
-
-    try:
-        vector_db = instansiate_vector_db()
-        vector_db.insert_documents(session, [Path(file_path)], document_ids=[document_id])
-
-        document = session.get(Document, document_id)
-        document.status = "done"
-
-        session.commit()
-    finally:
-        session.close()
-
-
+from app.tasks import embed_document
 
 router = APIRouter(prefix="/v1/admin", tags=["Admin"], dependencies=[Depends(RequireRole("admin"))])
 
@@ -51,7 +32,7 @@ def insert_document(
 ):
     
     safe_name = f"{uuid.uuid4()}_{file.filename}"
-    base_dir = Path("docs")
+    base_dir = Path("src/docs")
     base_dir.mkdir(parents=True, exist_ok=True)
 
     file_path = base_dir / safe_name
@@ -69,7 +50,7 @@ def insert_document(
     session.add(document)
     session.commit()
 
-    _embed_document(document.id, str(file_path))
+    embed_document.delay(document.id, str(file_path))
 
     return APIResponse(status_code=201, message="Insert pending", data={"status": "pending"})
 
@@ -107,7 +88,7 @@ def get_documents(
         message="Document returned successfully", 
         data={
             "document_items": [
-                {"document_id": document.id, "document_name": document.filename, "time_upload": document.created_at, "user": user.username}
+                {"document_id": document.id, "document_name": document.filename, "document_status": document.status, "time_upload": document.created_at, "user": user.username}
                 for document, user in results
             ]
         })

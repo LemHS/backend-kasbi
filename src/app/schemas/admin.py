@@ -8,6 +8,7 @@ class FileStatus(BaseModel):
 class DocumentItem(BaseModel):
     document_id: int
     document_name: str
+    document_status: str
     time_upload: datetime
     user: str
 

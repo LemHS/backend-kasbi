@@ -42,7 +42,6 @@ def register(payload: RegisterRequest, session: Session = Depends(get_db)) -> AP
     user = User(
         username=payload.username,
         email=payload.email,
-        full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
         is_active=True,
         token_version=1

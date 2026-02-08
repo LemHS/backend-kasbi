@@ -33,7 +33,7 @@ class GraphBuilder():
         
         self.config = config
         self.graph_builder = StateGraph(ChatbotState)
-        self.retriever = RerankRetriever(k=15, k_rerank=2)
+        self.retriever = HybridRetriever(k=50, k_rrf=5)
 
         # INITIALIZE checkpointer
         self.checkpointer = MemorySaver()
