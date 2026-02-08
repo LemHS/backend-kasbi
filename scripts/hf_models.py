@@ -1,6 +1,7 @@
 from app.config import get_settings
-from transformers import AutoModel, AutoTokenizer
-from flashrank import Ranker
+from fastembed import TextEmbedding
+from fastembed.rerank.cross_encoder import TextCrossEncoder
+from docling.document_converter import DocumentConverter
 
 import os
 from pathlib import Path
@@ -9,7 +10,6 @@ from pathlib import Path
 if __name__ == "__main__":
     settings = get_settings()
 
-    AutoModel.from_pretrained(settings.EMBEDDING_MODEL)
-    AutoTokenizer.from_pretrained(settings.EMBEDDING_MODEL)
-
-    Ranker(model_name=settings.RERANK_MODEL, cache_dir="/models/huggingface")
+    TextEmbedding(model_name=settings.EMBEDDING_MODEL, cache_dir="/models/huggingface")
+    TextCrossEncoder(model_name=settings.RERANK_MODEL, cache_dir="/models/huggingface")
+    DocumentConverter()

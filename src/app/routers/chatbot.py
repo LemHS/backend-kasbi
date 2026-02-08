@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Response, BackgroundTasks, Request
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 
 from app.database import get_db
 from app.models.role import Role, UserRole
@@ -43,20 +43,37 @@ def ask_chatbot(
     response.set_cookie(key="session_id", value=session_id, httponly=True)
 
     if payload.thread_id is None:
+        max_thread_id = session.exec(
+            select(func.max(Thread.thread_id))
+            .where(Thread.user_id == user.id)
+        ).one()
+
+        next_thread_id = (max_thread_id or 0) + 1
         thread = Thread(
             thread_title=payload.query,
-            user_id=user.id
+            user_id=user.id,
+            thread_id=next_thread_id
         )
 
         session.add(thread)
         session.commit()
 
-        payload.thread_id = thread.id
+        payload.thread_id = next_thread_id
+
+    user_chat = Chat(
+        role="user",
+        message=payload.query,
+        thread_id=payload.thread_id,
+        user_id=user.id
+    )
+
+    session.add(user_chat)
+    session.commit()
 
     config = {
         "configurable": {
             "llm": OpenRouterModel(
-                model="tngtech/deepseek-r1t2-chimera:free",
+                model="arcee-ai/trinity-large-preview:free",
             ),
             "session": session,
 
@@ -67,13 +84,14 @@ def ask_chatbot(
 
     graph = instansiate_chatbot_resources(request.app)["chatbot_graph"]
     result_state: ChatbotState = graph.invoke(payload, config=config)
-    chat = Chat(
-        user_query=payload.query,
-        answer = result_state["answer"],
-        thread_id=payload.thread_id
+    chatbot_chat = Chat(
+        role="chatbot",
+        message=result_state["answer"],
+        thread_id=payload.thread_id,
+        user_id=user.id
     )
 
-    session.add(chat)
+    session.add(chatbot_chat)
     session.commit()
 
     return APIResponse(status_code=201, message="Generated response", data=result_state)
@@ -90,7 +108,7 @@ def get_threads(
     
     response.set_cookie(key="session_id", value=session_id, httponly=True)
 
-    threads = session.exec(select(Thread).where(Thread.user_id == user.id).order_by(Thread.id)).all()
+    threads = session.exec(select(Thread).where(Thread.user_id == user.id).order_by(Thread.thread_id)).all()
     return APIResponse(
         status_code=200, 
         message="Thread returned successfully", 
@@ -113,18 +131,18 @@ def chat_history(
     
     response.set_cookie(key="session_id", value=session_id, httponly=True)
 
-    thread = session.exec(select(Thread).where(Thread.id == thread_id, Thread.user_id == user.id)).one_or_none()
+    thread = session.exec(select(Thread).where(Thread.thread_id == thread_id, Thread.user_id == user.id)).one_or_none()
     if thread is None:
         raise HTTPException(status_code=404, detail={"error_code": "invalid_thread", "message": "Thread not found"})
     
-    chats = session.exec(select(Chat).where(Chat.thread_id == thread_id).order_by(Chat.id)).all()
+    chats = session.exec(select(Chat).where(Chat.thread_id == thread_id, Chat.user_id == user.id).order_by(Chat.id)).all()
     
     return APIResponse(
         status_code=200, 
         message="Chat histories returned successfully", 
         data={
             "chats": [
-                {"user_query": chat.user_query, "answer": chat.answer}
+                {"role": chat.role, "message": chat.message, "created_at": chat.created_at}
                 for chat in chats
             ]
         })

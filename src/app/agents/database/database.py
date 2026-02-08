@@ -13,7 +13,6 @@ from fastembed import TextEmbedding
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
 from langchain_core.documents import Document as Doc
 
 from app.database import get_db
@@ -53,6 +52,7 @@ class VectorDatabase():
             try:  
                 doc = self.converter.convert(path)
             except Exception as e:
+                print(e)
                 document = session.exec(
                     select(Document).where(Document.id == document_id)
                 ).one()
@@ -78,11 +78,12 @@ class VectorDatabase():
             try:
                 vector_embed = self.embed_document(split_document.page_content)
                 document_vector = DocumentVector(
-                    embedding=vector_embed,
+                    dense_embedding=vector_embed,
                     content=split_document.page_content,
                     document_id=split_document.metadata["document_id"]
                 )
             except Exception as e:
+                print(e)
                 document.status = "failed"
 
                 session.add(document)

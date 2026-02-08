@@ -20,7 +20,7 @@ def _issue_tokens(user: User):
     access_token = create_access_token(str(user.id), primary_role, user.token_version, extra_claims={"roles": [primary_role]})
     refresh_token = create_refresh_token(str(user.id), primary_role, user.token_version, extra_claims={"roles": [primary_role]})
 
-    return TokenPair(access_token=access_token, refresh_token=refresh_token, role=primary_role)
+    return TokenPair(access_token=access_token, refresh_token=refresh_token, role=primary_role, username=user.username)
 
 
 @router.post("/register", response_model=APIResponse[TokenPair], status_code=201)
@@ -42,7 +42,6 @@ def register(payload: RegisterRequest, session: Session = Depends(get_db)) -> AP
     user = User(
         username=payload.username,
         email=payload.email,
-        full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
         is_active=True,
         token_version=1
@@ -58,9 +57,14 @@ def register(payload: RegisterRequest, session: Session = Depends(get_db)) -> AP
 
 @router.post("/login", response_model=APIResponse[TokenPair])
 def login(payload: LoginRequest, session: Session = Depends(get_db)) -> APIResponse[TokenPair]:
-    user = session.exec(
-        select(User).options(selectinload(User.roles)).where(User.email == payload.email)
-    ).one_or_none()
+    if payload.email is not None:
+        user = session.exec(
+            select(User).options(selectinload(User.roles)).where(User.email == payload.email)
+        ).one_or_none()
+    else:
+        user = session.exec(
+            select(User).options(selectinload(User.roles)).where(User.username == payload.username)
+        ).one_or_none()
 
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail={"error_code": "invalid_credentials", "message": "Invalid email or password"})

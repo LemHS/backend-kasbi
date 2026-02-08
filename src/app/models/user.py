@@ -8,14 +8,13 @@ from app.models.role import UserRole
 if TYPE_CHECKING:
     from app.models.role import Role
     from app.models.document import Document
-    from app.models.history import Thread
+    from app.models.history import Thread, Chat
 
 class User(IDModel, TimestampedModel, table=True):
     __tablename__ = "users"
 
     username: str = Field(index=True, nullable=False, unique=True)
     email: str = Field(index=True, nullable=False, unique=True)
-    full_name: Optional[str] = Field(default=None, nullable=True)
     hashed_password: str
     is_active: bool = Field(default=True, nullable=False)
     token_version: int = Field(default=1, nullable=False)
@@ -23,4 +22,4 @@ class User(IDModel, TimestampedModel, table=True):
 
     roles: List["Role"] = Relationship(back_populates="users", link_model=UserRole)
     documents: List["Document"] = Relationship(back_populates="user")
-    threads: List["Thread"] = Relationship(back_populates="user")
+    threads: List["Thread"] = Relationship(back_populates="user", cascade_delete=True)
