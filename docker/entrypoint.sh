@@ -14,4 +14,4 @@ echo "Seeding admin..."
 uv run python scripts/seeder/admin_seed.py
 
 echo "Starting app..."
-exec uv run python src/app/main.py
+exec uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
