@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    root_path="/api",
+    # root_path="/api",
     title="KASBI API",
     description="API untuk chatbot KASBI",
     version="1.0.0",
