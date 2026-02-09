@@ -20,5 +20,14 @@ def embed_document(document_id, file_path):
         
         document.status = "done"
         session.commit()
+    except Exception as e:
+        print(e)
+        document = session.get(Document, document_id)
+        if document is None:
+            session.close()
+            return
+        
+        document.status = "failed"
+        session.commit()
     finally:
         session.close()
