@@ -212,7 +212,7 @@ def get_users(
 
 @super_admin_router.put("/users/{user_id}", response_model=APIResponse[FileStatus], status_code=201)
 def update_user(
-    user_id,
+    user_id: int,
     payload: UpdateUserRequest,
     session: Session = Depends(get_db),
 ) -> APIResponse[FileStatus]:
