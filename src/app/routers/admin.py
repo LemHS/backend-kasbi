@@ -14,6 +14,7 @@ from app.worker import celery_app
 from app.database import get_db
 from app.models.document import Document
 from app.models.user import User
+from app.models.role import Role
 
 from app.schemas.admin import FileStatus, DocumentResponse, DeleteDocRequest, CreateUserRequest, DeleteUserRequest, UserRead, UpdateUserRequest, UserResponse
 from app.schemas.common import APIResponse
@@ -141,14 +142,17 @@ def create_user(
     if user:
         raise HTTPException(status_code=409, detail={"error_code": "email_taken", "message": "Email already exists"})
     
+    admin_role = session.exec(
+            select(Role).where(Role.name == "admin")
+    ).one_or_none()
+
     user = User(
         email=payload.email,
         username=payload.username,
         hashed_password=hash_password(payload.password),
+        roles=admin_role,
         is_active=True,
     )
-
-    user.roles = ["admin"]
 
     session.add(user)
     session.commit()
@@ -176,7 +180,7 @@ def del_user(
         status_code=200, 
         message="Document deleted successfully")
 
-@admin_router.get("/users", response_model=APIResponse[UserResponse])
+@super_admin_router.get("/users", response_model=APIResponse[UserResponse])
 def get_users(
     session: Session = Depends(get_db),
     offset: int = 0,
