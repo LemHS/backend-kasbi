@@ -24,6 +24,8 @@ from app.tasks import embed_document
 router = APIRouter(prefix="/v1/admin", tags=["Admin"], dependencies=[Depends(RequireRole("admin"))])
 
 
+MAX_FILE_SIZE = 5 * 1024 * 1024
+
 @router.post("/insertdoc", response_model=APIResponse[FileStatus], status_code=201)
 def insert_document(
     file: UploadFile = File(), 
@@ -37,6 +39,15 @@ def insert_document(
     if document is not None:
         raise HTTPException(status_code=404, detail="Document with the same file name already exist") 
 
+    file_content = file.file.read()
+    file_size = len(file_content)
+    
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413, 
+            detail=f"File size ({file_size / 1024 / 1024:.2f}MB) exceeds maximum allowed size ({MAX_FILE_SIZE / 1024 / 1024}MB)"
+        )
+    
     safe_name = f"{uuid.uuid4()}_{file.filename}"
     base_dir = Path("src/docs")
     base_dir.mkdir(parents=True, exist_ok=True)

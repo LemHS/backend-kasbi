@@ -73,7 +73,7 @@ def ask_chatbot(
     config = {
         "configurable": {
             "llm": OpenRouterModel(
-                model="arcee-ai/trinity-large-preview:free",
+                model="arcee-ai/trinity-mini:free",
             ),
             "session": session,
 
