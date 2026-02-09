@@ -62,7 +62,21 @@ def del_documents(
 
     documents = session.exec(
         select(Document).where(Document.id == payload.document_id)
-    ).one()
+    ).one_or_none()
+
+    if documents is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    file_path = Path(documents.filepath)
+    if file_path.exists():
+        try:
+            file_path.unlink()
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete file: {str(e)}"
+            )
+
 
     session.delete(documents)
     session.commit()
