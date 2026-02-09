@@ -187,8 +187,12 @@ def get_users(
     limit: int = 10,
     descending: bool = True,
 ) -> APIResponse[UserResponse]:
+    
+    admin_role = session.exec(
+            select(Role).where(Role.name == "admin")
+    ).one_or_none()
 
-    results = session.exec(select(User).where(User.roles.contains(["admin"])).order_by(
+    results = session.exec(select(User).where(User.roles.contains([admin_role])).order_by(
         User.username.desc() if descending else User.username.asc()
     ).offset(offset).limit(limit)).all()
     return APIResponse(
