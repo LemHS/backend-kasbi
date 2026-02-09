@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     
     GROQ_API_KEY: str
     OPEN_ROUTER_API_KEY: str
+    OPEN_ROUTER_MODEL: str
     
     ALLOWED_ORIGINS: str
 

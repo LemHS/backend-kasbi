@@ -19,6 +19,8 @@ from app.agents import instansiate_chatbot_resources
 from app.agents.models import GroqModel, GroqModelStructured, OpenRouterModel
 from app.agents.retriever import BaseRetriever
 
+from app.config import get_settings
+
 router = APIRouter(
     prefix="/v1/chatbot",
     tags=["chatbot"],
@@ -73,7 +75,7 @@ def ask_chatbot(
     config = {
         "configurable": {
             "llm": OpenRouterModel(
-                model="arcee-ai/trinity-mini:free",
+                model=get_settings().OPEN_ROUTER_MODEL,
             ),
             "session": session,
 
