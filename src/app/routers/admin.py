@@ -196,7 +196,7 @@ def get_users(
         message="User returned successfully", 
         data={
             "user_items": [
-                {"id": user.id, "user_name": user.username, "user_email": user.email}
+                {"id": user.id, "username": user.username, "email": user.email}
                 for user in results
             ]
         })

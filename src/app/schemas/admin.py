@@ -30,6 +30,9 @@ class RoleBase(BaseModel):
     name: str
     description: str | None = None
 
+    class Config:
+        from_attributes = True
+
 class CreateUserRequest(UserBase):
     password: str
 
@@ -40,7 +43,7 @@ class UserResponse(BaseModel):
     user_items: List[UserItem]
 
 class UpdateUserRequest(UserBase):
-    full_name: str | None = None
+    username: str | None = None
     password: str | None = None
     is_active: bool | None = None
 
