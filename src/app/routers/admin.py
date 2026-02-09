@@ -14,7 +14,7 @@ from app.worker import celery_app
 from app.database import get_db
 from app.models.document import Document
 from app.models.user import User
-from app.models.role import Role
+from app.models.role import Role, UserRole
 
 from app.schemas.admin import FileStatus, DocumentResponse, DeleteDocRequest, CreateUserRequest, DeleteUserRequest, UserRead, UpdateUserRequest, UserResponse
 from app.schemas.common import APIResponse
@@ -116,9 +116,12 @@ def get_documents(
     descending: bool = True,
 ) -> APIResponse[DocumentResponse]:
 
-    results = session.exec(select(Document, User).join(User, isouter=True).order_by(
-        Document.filename.desc() if descending else Document.filename.asc()
-    ).offset(offset).limit(limit)).all()
+    results = session.exec(
+        select(Document, User).join(User, isouter=True)
+        .order_by(Document.filename.desc() if descending else Document.filename.asc())
+        .offset(offset)
+        .limit(limit)
+    ).all()
     return APIResponse(
         status_code=200, 
         message="Document returned successfully", 
@@ -188,9 +191,15 @@ def get_users(
     descending: bool = True,
 ) -> APIResponse[UserResponse]:
 
-    results = session.exec(select(User).where(Role.name == "admin").order_by(
-        User.username.desc() if descending else User.username.asc()
-    ).offset(offset).limit(limit)).all()
+    results = session.exec(
+        select(User)
+        .join(UserRole, User.id == UserRole.user_id)
+        .join(Role, UserRole.role_id == Role.id)
+        .where(Role.name == "admin")
+        .order_by(User.username.desc() if descending else User.username.asc())
+        .offset(offset)
+        .limit(limit)
+    ).all()
     return APIResponse(
         status_code=200, 
         message="User returned successfully", 
