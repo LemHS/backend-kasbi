@@ -18,3 +18,7 @@ class DocumentResponse(BaseModel):
 
 class DeleteRequest(BaseModel):
     document_id: int
+
+class UserRequest(BaseModel):
+    username: str
+    password: str

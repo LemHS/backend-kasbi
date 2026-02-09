@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 class DocumentStatus(str, Enum):
     pending = "pending"
     done = "done"
+    failed = "failed"
 
 
 class Document(IDModel, TimestampedModel, table=True):

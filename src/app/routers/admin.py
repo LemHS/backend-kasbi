@@ -30,7 +30,13 @@ def insert_document(
     user: User = Depends(GetUser()), 
     session: Session = Depends(get_db),
 ):
-    
+    document = session.exec(
+        select(Document).where(Document.filename == file.filename)
+    ).one_or_none()
+
+    if document is not None:
+        raise HTTPException(status_code=404, detail="Document with the same file name already exist") 
+
     safe_name = f"{uuid.uuid4()}_{file.filename}"
     base_dir = Path("src/docs")
     base_dir.mkdir(parents=True, exist_ok=True)
@@ -41,7 +47,7 @@ def insert_document(
         f.write(file.file.read())
 
     document = Document(
-        filename=safe_name,
+        filename=file.filename,
         filepath=str(file_path),
         user_id=user.id,
         status="pending"
