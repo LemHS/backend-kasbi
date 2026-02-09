@@ -63,7 +63,7 @@ WORKDIR /backend
 COPY --from=builder /backend/.venv /backend/.venv
 COPY --from=builder /backend /backend
 
-RUN mkdir -p /models/huggingface \
+RUN mkdir -p /models/huggingface /backend/src/docs \
     && chown -R celeryuser:celeryuser /backend /models
 
 COPY docker/entrypoint.sh /entrypoint.sh
