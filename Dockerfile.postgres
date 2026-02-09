@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN cd /tmp && \
-    git clone https://github.com/timescale/pg_textsearch && \
+    git clone --branch v0.5.0 --depth 1 https://github.com/timescale/pg_textsearch && \
     cd pg_textsearch && \
     make && \
     make install && \
