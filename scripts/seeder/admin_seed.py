@@ -20,7 +20,7 @@ DEFAULT_ADMIN = [
 def run():
     with Session(engine) as session:
         admin_role = session.exec(
-            select(Role).where(Role.name == "admin")
+            select(Role).where(Role.name == "superadmin")
         ).one_or_none()
 
         existing_emails = {user.email for user in session.exec(select(User)).all()}
@@ -35,6 +35,14 @@ def run():
                     token_version=1,
                     is_active=True
                 ))
+            else:
+                admin = session.exec(
+                    select(User).where(User.email == data["email"])
+                ).one()
+                
+                admin.roles = [admin_role]
+                session.add(admin)
+
         session.commit()
 
 

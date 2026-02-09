@@ -10,7 +10,8 @@ settings = get_settings()
 
 DEFAULT_ROLES = {
     "user": "Regular user",
-    "admin": "Admin with more authority"
+    "admin": "Admin with more authority",
+    "superadmin": "Admin with MORE authority",
 }
 
 def run():
