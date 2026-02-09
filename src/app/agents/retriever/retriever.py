@@ -35,7 +35,7 @@ class BaseRetriever():
         self.k = k
         self.k_fetch = int(k * 1.5)
         self.rank_type = rank_type
-        self.embed_model = TextEmbedding(model_name=embedding_model)
+        self.embed_model = TextEmbedding(model_name=embedding_model, cache_dir="/models/huggingface")
 
     def retrieve(self, session: Session, query: str) -> List[str]:
         if self.rank_type == "semantic":
@@ -164,7 +164,7 @@ class RerankRetriever(BaseRetriever):
         super().__init__(k, rank_type, embedding_model)
         
         self.k_rerank = k_rerank
-        self.reranker = TextCrossEncoder(model_name=rerank_model)
+        self.reranker = TextCrossEncoder(model_name=rerank_model, cache_dir="/models/huggingface")
 
     def retrieve(self, session: Session, query: str):
         document_contents = super().retrieve(session, query)

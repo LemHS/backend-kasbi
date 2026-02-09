@@ -27,7 +27,7 @@ class VectorDatabase():
             chunk_size: int = 900,
             chunk_overlap: int = 100,
     ):
-        self.embed_model = TextEmbedding(model_name=model_name)
+        self.embed_model = TextEmbedding(model_name=model_name, cache_dir="/models/huggingface")
         self.split_text = split_text
 
         if split_text:
