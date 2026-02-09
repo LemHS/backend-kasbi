@@ -129,7 +129,7 @@ def get_documents(
             ]
         })
 
-@super_admin_router.post("/users", response_model=APIResponse[FileStatus], status_code=201)
+@super_admin_router.post("/users", response_model=APIResponse[UserRead], status_code=201)
 def create_user(
     payload: CreateUserRequest,
     session: Session = Depends(get_db)
@@ -144,7 +144,7 @@ def create_user(
     
     admin_role = session.exec(
             select(Role).where(Role.name == "admin")
-    ).one_or_none()
+    ).one()
 
     user = User(
         email=payload.email,
@@ -187,12 +187,8 @@ def get_users(
     limit: int = 10,
     descending: bool = True,
 ) -> APIResponse[UserResponse]:
-    
-    admin_role = session.exec(
-            select(Role).where(Role.name == "admin")
-    ).one_or_none()
 
-    results = session.exec(select(User).where(User.roles.contains([admin_role])).order_by(
+    results = session.exec(select(User).where(Role.name == "admin").order_by(
         User.username.desc() if descending else User.username.asc()
     ).offset(offset).limit(limit)).all()
     return APIResponse(
