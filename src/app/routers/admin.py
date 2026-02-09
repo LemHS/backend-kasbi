@@ -145,9 +145,10 @@ def create_user(
         email=payload.email,
         username=payload.username,
         hashed_password=hash_password(payload.password),
-        roles=["admin"],
         is_active=True,
     )
+
+    user.roles = ["admin"]
 
     session.add(user)
     session.commit()
