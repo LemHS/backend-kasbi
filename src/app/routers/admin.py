@@ -150,7 +150,7 @@ def create_user(
         email=payload.email,
         username=payload.username,
         hashed_password=hash_password(payload.password),
-        roles=admin_role,
+        roles=[admin_role],
         is_active=True,
     )
 
