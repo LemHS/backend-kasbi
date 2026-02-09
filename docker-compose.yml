@@ -31,6 +31,7 @@ services:
     user: celeryuser
     volumes:
       - hf_models:/models/huggingface
+      - docs:/backend/src/docs
     container_name: wa01
     command: /entrypoint.sh
     expose:
@@ -49,6 +50,7 @@ services:
     user: celeryuser
     volumes:
       - hf_models:/models/huggingface
+      - docs:/backend/src/docs
     container_name: cl01
     command: /celery_entrypoint.sh
     depends_on:
@@ -61,6 +63,7 @@ services:
 volumes:
   pgdata:
   hf_models:
+  docs:
 
 networks:
   dokploy-network:
