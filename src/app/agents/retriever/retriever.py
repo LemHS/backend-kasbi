@@ -64,7 +64,8 @@ class BaseRetriever():
         return documents
     
     def _lexical_retrieve(self, session: Session, query: str, k: int):
-        statement = text(f"SELECT id, content <@> to_bm25query('{query}', 'docs_idx') as score FROM document_vectors ORDER BY score LIMIT {k};")
+        # statement = text(f"SELECT id, content <@> to_bm25query('{query}', 'docs_idx') as score FROM document_vectors ORDER BY score LIMIT {k};")
+        statement = text(f"SELECT id, content FROM document_vectors ORDER BY content <@> '{query}' LIMIT {k};")
 
         documents = session.exec(statement=statement)
         documents = [(document[0], document[1]) for document in documents]
