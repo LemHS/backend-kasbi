@@ -6,6 +6,8 @@ services:
   redis:
     image: redis:latest
     container_name: rd01
+    networks:
+      - dokploy-network
 
 
   postgres:
@@ -21,6 +23,8 @@ services:
       - ../files/postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     expose:
       - 5432
+    networks:
+      - dokploy-network
 
   webapp:
     build: .
@@ -36,6 +40,8 @@ services:
       - postgres
     env_file:
       - .env
+    networks:
+      - dokploy-network
 
 
   celery:
@@ -49,8 +55,13 @@ services:
       - redis
     env_file:
       - .env
+    networks:
+      - dokploy-network
 
 volumes:
   pgdata:
   hf_models:
 
+networks:
+  dokploy-network:
+    external: true
