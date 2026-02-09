@@ -12,13 +12,44 @@ class DocumentItem(BaseModel):
     time_upload: datetime
     user: str
 
-
 class DocumentResponse(BaseModel):
     document_items: List[DocumentItem]
 
-class DeleteRequest(BaseModel):
+class DeleteDocRequest(BaseModel):
     document_id: int
 
-class UserRequest(BaseModel):
+class UserBase(BaseModel):
+    email: EmailStr
     username: str
+
+class UserItem(UserBase):
+    id: int
+
+class RoleBase(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+
+class CreateUserRequest(UserBase):
     password: str
+
+class DeleteUserRequest(UserBase):
+    pass
+
+class UserResponse(BaseModel):
+    user_items: List[UserItem]
+
+class UpdateUserRequest(UserBase):
+    full_name: str | None = None
+    password: str | None = None
+    is_active: bool | None = None
+
+class UserRead(UserBase):
+    id: int
+    is_active: bool
+    roles: List[RoleBase]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
