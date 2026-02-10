@@ -36,6 +36,7 @@ def send_whatsapp_message(to: str, body: str):
         "type": "text",
         "text": {"preview_url": False, "body": body},
     }
+    print(payload)
 
     response = requests.post(url, headers=headers, json=payload)
 
@@ -62,6 +63,7 @@ async def process_whatsapp_message(data: dict):
         return
 
     messages = value["messages"]
+    print(messages)
     if not messages:
         return
     # Extract user message
