@@ -9,7 +9,7 @@ from app.security.jwt import decode_token
 
 from app.agents import instansiate_chatbot_resources
 
-from app.routers import chatbot, auth, admin
+from app.routers import chatbot, auth, admin, whatsapp
 
 from app.config import get_settings
 
@@ -60,6 +60,7 @@ app.include_router(chatbot.router)
 app.include_router(auth.router)
 app.include_router(admin.admin_router)
 app.include_router(admin.super_admin_router)
+app.include_router(whatsapp.router)
 
 if __name__ == "__main__":
     import uvicorn
