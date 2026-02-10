@@ -62,6 +62,7 @@ async def process_whatsapp_message(data: dict):
         return
 
     messages = value["messages"]
+    print(messages)
     if not messages:
         return
     # Extract user message
