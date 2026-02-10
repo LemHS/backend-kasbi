@@ -224,6 +224,7 @@ def update_user(
         raise HTTPException(status_code=404, detail={"error_code": "user_not_found", "message": "User not found"})
     
     update_data = payload.model_dump()
+    print(update_data)
 
     if "password" in update_data:
         user.hashed_password = hash_password(update_data.pop("password"))
