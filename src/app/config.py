@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     
     ALLOWED_ORIGINS: str
 
+    ACCESS_TOKEN: str
+    VERSION: str
+    PHONE_NUMBER_ID: str
+    VERIFY_TOKEN: str
+
     @field_validator("ADMIN_EMAILS")
     def parse_admin_emails(cls, v: str) -> List[str]:
         return v.split(",") if v else []
