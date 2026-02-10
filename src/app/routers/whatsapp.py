@@ -36,6 +36,7 @@ def send_whatsapp_message(to: str, body: str):
         "type": "text",
         "text": {"preview_url": False, "body": body},
     }
+    print(payload)
 
     response = requests.post(url, headers=headers, json=payload)
 
