@@ -224,15 +224,15 @@ def update_user(
         raise HTTPException(status_code=404, detail={"error_code": "user_not_found", "message": "User not found"})
     
     update_data = payload.model_dump()
-    print(update_data)
 
-    if "password" in update_data:
+    if update_data["password"] is not None:
         user.hashed_password = hash_password(update_data.pop("password"))
         user.token_version += 1
         user.last_password_change = datetime.now(timezone.utc)
 
     for key, value in update_data.items():
-        setattr(user, key, value)
+        if value is not None:
+            setattr(user, key, value)
 
     session.add(user)
     session.commit()
