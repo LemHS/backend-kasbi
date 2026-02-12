@@ -11,8 +11,10 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 from app.schemas.common import APIResponse
+from app.schemas.chatbot import ChatbotState
 
-from app.database import get_db
+from app.agents import instansiate_chatbot_resources
+from app.agents.models import OpenRouterModel
 
 from app.config import get_settings
 
@@ -36,7 +38,6 @@ def send_whatsapp_message(to: str, body: str):
         "type": "text",
         "text": {"preview_url": False, "body": body},
     }
-    print(payload)
 
     response = requests.post(url, headers=headers, json=payload)
 
@@ -47,30 +48,54 @@ def send_whatsapp_message(to: str, body: str):
 async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
 
-    background_tasks.add_task(process_whatsapp_message, data)
+    background_tasks.add_task(process_whatsapp_message, data, request)
 
-    # Return 200 OK immediately to acknowledge receipt
     return APIResponse(
         status_code=200, 
         message="Message received")
 
-async def process_whatsapp_message(data: dict):
-    # Extract message updates
-    entry = data.get("entry", [{}])[0]
-    changes = entry.get("changes", [{}])[0]
-    value = changes.get("value", {})
-    if "messages" not in value:
-        return
+async def process_whatsapp_message(data: dict, request: Request):
+    
+    from app.database import engine
+    from sqlmodel import Session
 
-    messages = value["messages"]
-    print(messages)
-    if not messages:
-        return
-    # Extract user message
-    message = messages[0]
-    from_number = message["from"]
-    user_text = message["text"]["body"]
-    send_whatsapp_message(to=from_number, body="halo")
+    with Session(engine) as session:
+
+        entry = data.get("entry", [{}])[0]
+        changes = entry.get("changes", [{}])[0]
+        value = changes.get("value", {})
+    
+        if "messages" not in value:
+            return
+
+        messages = value["messages"]
+        if not messages:
+            return
+        # Extract user message
+        message = messages[0]
+        from_number = message["from"]
+        user_text = message["text"]["body"]
+
+        payload = ChatbotState(
+            query=user_text
+        )
+
+        config = {
+            "configurable": {
+                "llm": OpenRouterModel(
+                    model=get_settings().OPEN_ROUTER_MODEL,
+                ),
+                "session": session,
+
+                # ID buat checkpointing
+                "thread_id": None
+            }
+        }
+
+        graph = instansiate_chatbot_resources(request.app)["chatbot_graph"]
+        result_state: ChatbotState = graph.invoke(payload, config=config)
+
+        send_whatsapp_message(to=from_number, body="halo")
 
 
 @router.get("/webhook")
