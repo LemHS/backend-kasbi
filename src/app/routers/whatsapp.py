@@ -95,7 +95,7 @@ async def process_whatsapp_message(data: dict, request: Request):
         graph = instansiate_chatbot_resources(request.app)["chatbot_graph"]
         result_state: ChatbotState = graph.invoke(payload, config=config)
 
-        send_whatsapp_message(to=from_number, body="halo")
+        send_whatsapp_message(to=from_number, body=result_state["answer"])
 
 
 @router.get("/webhook")
