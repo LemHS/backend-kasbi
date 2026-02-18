@@ -42,16 +42,7 @@ def insert_document(
     ).one_or_none()
 
     if document is not None:
-        raise HTTPException(status_code=404, detail="Document with the same file name already exist") 
-
-    file_content = file.file.read()
-    file_size = len(file_content)
-    
-    if file_size > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413, 
-            detail=f"File size ({file_size / 1024 / 1024:.2f}MB) exceeds maximum allowed size ({MAX_FILE_SIZE / 1024 / 1024}MB)"
-        )
+        raise HTTPException(status_code=404, detail="Document with the same file name already exist")
     
     safe_name = f"{uuid.uuid4()}_{file.filename}"
     base_dir = Path("src/docs")
@@ -59,8 +50,18 @@ def insert_document(
 
     file_path = base_dir / safe_name
 
+    file.file.seek(0)
+
     with open(file_path, "wb") as f:
-        f.write(file.file.read())
+        file_content = file.file.read()
+        file_size = len(file_content)
+        
+        if file_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413, 
+                detail=f"File size ({file_size / 1024 / 1024:.2f}MB) exceeds maximum allowed size ({MAX_FILE_SIZE / 1024 / 1024}MB)"
+            )
+        f.write(file_content)
 
     document = Document(
         filename=file.filename,

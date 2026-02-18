@@ -10,16 +10,6 @@ def embed_document(document_id, file_path):
     """Background task to embed a document into the vector database."""
     session = SessionLocal()
     try:
-        import os
-
-        if not os.path.exists(Path(file_path)):
-            print("FILE NOT FOUND")
-
-        print("File size:", os.path.getsize(Path(file_path)))
-
-        with open(Path(file_path), "rb") as f:
-            print("First bytes:", f.read(5))
-
         vector_db = instansiate_vector_db()
         vector_db.insert_documents(session, [Path(file_path)], document_ids=[document_id])
         
