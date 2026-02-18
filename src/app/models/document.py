@@ -21,7 +21,7 @@ class Document(IDModel, TimestampedModel, table=True):
 
     filename: str = Field(index=True, nullable=False, unique=True)
     filepath: str = Field(index=True, nullable=False, unique=True)
-    user_id: int = Field(index=True, foreign_key="users.id", nullable=False)
+    user_id: Optional[int] = Field(index=True, foreign_key="users.id", nullable=True)
     status: DocumentStatus = Field(default="pending", nullable=False)
 
     user: "User" = Relationship(back_populates="documents")

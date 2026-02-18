@@ -21,7 +21,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    pass
+    op.execute(
+        "ALTER TYPE documentstatus ADD VALUE IF NOT EXISTS 'failed';"
+    )
 
 
 def downgrade() -> None:
