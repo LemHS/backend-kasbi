@@ -128,7 +128,7 @@ def get_documents(
         message="Document returned successfully", 
         data={
             "document_items": [
-                {"document_id": document.id, "document_name": document.filename, "document_status": document.status, "time_upload": document.created_at, "user": user.username if user.username else "---"}
+                {"document_id": document.id, "document_name": document.filename, "document_status": document.status, "time_upload": document.created_at, "user": user.username if user else "---"}
                 for document, user in results
             ]
         })
