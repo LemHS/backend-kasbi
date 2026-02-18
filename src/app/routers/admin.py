@@ -25,8 +25,8 @@ from app.security.passwords import hash_password
 
 from app.tasks import embed_document
 
-super_admin_router = APIRouter(prefix="/v1/superadmin", tags=["Admin"], dependencies=[Depends(RequireRole("superadmin", "admin"))])
-admin_router = APIRouter(prefix="/v1/admin", tags=["Admin"], dependencies=[Depends(RequireRole("admin"))])
+super_admin_router = APIRouter(prefix="/v1/superadmin", tags=["Admin"], dependencies=[Depends(RequireRole("superadmin"))])
+admin_router = APIRouter(prefix="/v1/admin", tags=["Admin"], dependencies=[Depends(RequireRole("admin", "superadmin"))])
 
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
