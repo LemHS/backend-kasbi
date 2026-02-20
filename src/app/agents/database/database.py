@@ -150,9 +150,10 @@ class VectorDatabase():
         
         # CPU-optimized pipeline options
         pipeline_options = ThreadedPdfPipelineOptions(
-            ocr_batch_size=4,      # Reduced from 64
-            layout_batch_size=4,    # Reduced from 64
+            ocr_batch_size=2,      # Reduced from 64
+            layout_batch_size=2,    # Reduced from 64
             table_batch_size=1,     # Reduced from 4
+            queue_max_size=10,
         )
 
         self.converter = DocumentConverter(
