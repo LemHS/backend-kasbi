@@ -1,6 +1,7 @@
 from typing import Sequence, Any, List
 from uuid import uuid4
 from pathlib import Path
+import gc
 
 from fastapi import Depends
 from sqlmodel import Session, select
@@ -26,15 +27,31 @@ class VectorDatabase():
             split_text: bool = True,
             chunk_size: int = 900,
             chunk_overlap: int = 100,
+            batch_size: int = 16,  # Added batch size parameter
+            max_workers: int = 2,  # Limit concurrent processing
     ):
-        self.embed_model = TextEmbedding(model_name=model_name, cache_dir="/models/huggingface")
+        # Initialize embedding model lazily to save memory
+        self.model_name = model_name
+        self.embed_model = None
         self.split_text = split_text
+        self.batch_size = batch_size
+        self.max_workers = max_workers
+        self.converter = None  # Initialize lazily
 
         if split_text:
             self.text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
             ).from_tiktoken_encoder()
+
+    def _init_embed_model(self):
+        """Lazy initialization of embedding model"""
+        if self.embed_model is None:
+            self.embed_model = TextEmbedding(
+                model_name=self.model_name, 
+                cache_dir="/models/huggingface",
+                threads=self.max_workers  # Limit threads
+            )
 
     def insert_documents(
             self, 
@@ -43,22 +60,24 @@ class VectorDatabase():
             document_ids: Sequence[int]
         ) -> List[Document]:
 
-        if getattr(self, "converter", None) is None:
+        if self.converter is None:
             self._init_converter()
 
         documents = []
 
+        # Process documents one at a time to reduce memory pressure
         for path, document_id in zip(file_paths, document_ids):
             try:  
                 doc = self.converter.convert(path)
             except Exception as e:
-                print(e)
+                print(f"Error converting document {document_id}: {e}")
                 document = session.exec(
                     select(Document).where(Document.id == document_id)
-                ).one()
+                ).one_or_none()
 
-                session.delete(document)
-                session.commit()
+                if document:
+                    session.delete(document)
+                    session.commit()
             else:
                 new_path = Path("converted_docs").joinpath(*Path(path).parts[-1:]).with_suffix(".md")
                 new_path.parent.mkdir(parents=True, exist_ok=True)
@@ -68,54 +87,86 @@ class VectorDatabase():
                     f.write(text_content)
 
                 documents.append(Doc(page_content=text_content, metadata={"document_id": document_id}))
+                
+                # Clear the converted document from memory
+                del doc
+                gc.collect()
         
-        split_documents = self.text_splitter.split_documents(documents)
+        # Split documents
+        split_documents = self.text_splitter.split_documents(documents) if self.split_text else documents
+        
+        # Clear original documents from memory
+        del documents
+        gc.collect()
 
-        for split_document in split_documents:
-            document = session.exec(
+        # Initialize embedding model only when needed
+        self._init_embed_model()
+
+        # Process embeddings in batches to reduce memory usage
+        for i in range(0, len(split_documents), self.batch_size):
+            batch = split_documents[i:i + self.batch_size]
+            
+            for split_document in batch:
+                document = session.exec(
                     select(Document).where(Document.id == split_document.metadata["document_id"])
-            ).one()
-            try:
-                vector_embed = self.embed_document(split_document.page_content)
-                document_vector = DocumentVector(
-                    dense_embedding=vector_embed,
-                    content=split_document.page_content,
-                    document_id=split_document.metadata["document_id"]
-                )
-            except Exception as e:
-                print(e)
-                document.status = "failed"
+                ).one_or_none()
+                
+                if not document:
+                    continue
+                
+                try:
+                    vector_embed = self.embed_document(split_document.page_content)
+                    document_vector = DocumentVector(
+                        dense_embedding=vector_embed,
+                        content=split_document.page_content,
+                        document_id=split_document.metadata["document_id"]
+                    )
+                    
+                    document.status = "done"
+                    session.add(document_vector)
+                    session.add(document)
+                    
+                except Exception as e:
+                    print(f"Error embedding document {document.id}: {e}")
+                    document.status = "failed"
+                    session.add(document)
+            
+            # Commit after each batch to prevent memory buildup
+            session.commit()
+            gc.collect()
 
-                session.add(document)
-                session.commit()
-            else:
-                document.status = "done"
-
-                session.add(document_vector)
-                session.add(document)
-                session.commit()
-
-        return documents
+        return split_documents
     
-    def embed_document(self, page_content: str) -> List[int]:
-        vector_embed = list(self.embed_model.embed(page_content))
-
-        return vector_embed[0]
+    def embed_document(self, page_content: str) -> List[float]:
+        """Embed a single document with proper type handling"""
+        if self.embed_model is None:
+            self._init_embed_model()
+            
+        vector_embed = list(self.embed_model.embed([page_content]))
+        return vector_embed[0].tolist() if hasattr(vector_embed[0], 'tolist') else list(vector_embed[0])
     
     def _init_converter(self) -> None:
-        # accelerator_options = AcceleratorOptions(
-        #     device=AcceleratorDevice.CUDA,
-        # )
-
-        # pipeline_options = ThreadedPdfPipelineOptions(
-        #     ocr_batch_size=64,   
-        #     layout_batch_size=64,
-        #     table_batch_size=4,
-        # )
+        """Initialize document converter with CPU-optimized settings"""
+        
+        # CPU-optimized pipeline options
+        pipeline_options = ThreadedPdfPipelineOptions(
+            ocr_batch_size=4,      # Reduced from 64
+            layout_batch_size=4,    # Reduced from 64
+            table_batch_size=1,     # Reduced from 4
+        )
 
         self.converter = DocumentConverter(
-            # format_options={
-            #     "accelerator_options": accelerator_options,
-            #     "pipeline_options": pipeline_options
-            # }
+            format_options={
+                "pipeline_options": pipeline_options
+            }
         )
+    
+    def cleanup(self):
+        """Clean up resources to free memory"""
+        if self.embed_model is not None:
+            del self.embed_model
+            self.embed_model = None
+        if self.converter is not None:
+            del self.converter
+            self.converter = None
+        gc.collect()
