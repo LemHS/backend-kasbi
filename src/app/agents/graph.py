@@ -112,7 +112,7 @@ class GraphBuilder():
         
         Kategori Label:
         1. "SEARCH": Jika pertanyaan berkaitan dengan Data Pendidikan, BPMP Papua, Kurikulum, Sekolah, Guru, Regulasi, Dapodik, atau Layanan Kantor.
-        2. "CHAT": Jika pengguna menyapa (Halo, Hai), bertanya identitas bot (Siapa kamu, Siapa Kasbi), atau bertanya cara penggunaan bot.
+        2. "CHAT": Jika pengguna menyapa (Halo, Hai).
         3. "OOT": Jika pertanyaan jelas di luar topik pendidikan/kantor (misal: Politik, Resep Masakan, Film, Koding, Curhat Pribadi).
 
         Aturan Penting:
