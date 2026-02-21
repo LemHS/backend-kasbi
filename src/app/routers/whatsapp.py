@@ -74,28 +74,36 @@ async def process_whatsapp_message(data: dict, request: Request):
         # Extract user message
         message = messages[0]
         from_number = message["from"]
-        user_text = message["text"]["body"]
 
-        payload = ChatbotState(
-            query=user_text
-        )
+        if "text" in message.keys():
+            user_text = message["text"]["body"]
 
-        config = {
-            "configurable": {
-                "llm": OpenRouterModel(
-                    model=get_settings().OPEN_ROUTER_MODEL,
-                ),
-                "session": session,
+            payload = ChatbotState(
+                query=user_text
+            )
 
-                # ID buat checkpointing
-                "thread_id": None
+            config = {
+                "configurable": {
+                    "llm": OpenRouterModel(
+                        model=get_settings().OPEN_ROUTER_MODEL,
+                    ),
+                    "session": session,
+
+                    # ID buat checkpointing
+                    "thread_id": None
+                }
             }
-        }
 
-        graph = instansiate_chatbot_resources(request.app)["chatbot_graph"]
-        result_state: ChatbotState = graph.invoke(payload, config=config)
+            graph = instansiate_chatbot_resources(request.app)["chatbot_graph"]
+            result_state: ChatbotState = graph.invoke(payload, config=config)
 
-        send_whatsapp_message(to=from_number, body=result_state["answer"])
+            send_whatsapp_message(to=from_number, body=result_state["answer"])
+        else:
+            intro_template = """
+                Halo! Selamat datang di layanan informasi Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Papua. Saya Kasbi, Kawan Setia Berbagi Informasi, siap membantu Anda.
+                Apa yang bisa saya bantu hari ini? Apakah Anda ingin mengetahui informasi tentang program BPMP Papua, Dapodik, kurikulum, asesmen nasional, atau layanan ULT kami? Silakan sampaikan pertanyaan Anda! 😊
+            """
+            send_whatsapp_message(to=from_number, body=intro_template)
 
 
 @router.get("/webhook")
