@@ -100,7 +100,8 @@ async def process_whatsapp_message(data: dict, request: Request):
             send_whatsapp_message(to=from_number, body=result_state["answer"])
         else:
             intro_template = """
-                Halo! Selamat datang di layanan informasi Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Papua. Saya Kasbi, Kawan Setia Berbagi Informasi, siap membantu Anda.
+                Halo! Selamat datang di layanan informasi Balai Penjaminan Mutu Pendidikan (BPMP) Provinsi Papua. Saya Kasbi, Kawan Setia Berbagi Informasi, siap membantu Anda. 
+                
                 Apa yang bisa saya bantu hari ini? Apakah Anda ingin mengetahui informasi tentang program BPMP Papua, Dapodik, kurikulum, asesmen nasional, atau layanan ULT kami? Silakan sampaikan pertanyaan Anda! 😊
             """
             send_whatsapp_message(to=from_number, body=intro_template)
