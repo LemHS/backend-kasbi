@@ -139,12 +139,18 @@ def create_user(
     session: Session = Depends(get_db)
 ) -> APIResponse[UserRead]:
     
-    user = session.exec(
+    email_exist = session.exec(
         select(User).where(User.email == payload.email)
     ).one_or_none()
 
-    if user:
+    username_exist = session.exec(
+        select(User).where(User.username == payload.username)
+    ).one_or_none()
+
+    if email_exist:
         raise HTTPException(status_code=409, detail={"error_code": "email_taken", "message": "Email already exists"})
+    elif username_exist:
+        raise HTTPException(status_code=409, detail={"error_code": "username_taken", "message": "Username already exists"})
     
     admin_role = session.exec(
             select(Role).where(Role.name == "admin")
