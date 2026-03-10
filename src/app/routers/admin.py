@@ -133,6 +133,24 @@ def get_documents(
             ]
         })
 
+@admin_router.put("/documents/{doc_id}", response_model=APIResponse)
+def change_doc_status(
+    doc_id: int,
+    session: Session = Depends(get_db)
+) -> APIResponse:
+
+    documents = session.get(Document, doc_id)
+
+    if documents is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    documents.status = "failed"
+    session.commit()
+
+    return APIResponse(
+        status_code=200, 
+        message="Status changed successfully")
+
 @super_admin_router.post("/users", response_model=APIResponse[UserRead], status_code=201)
 def create_user(
     payload: CreateUserRequest,
