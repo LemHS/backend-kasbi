@@ -27,8 +27,8 @@ class VectorDatabase():
             split_text: bool = True,
             chunk_size: int = 900,
             chunk_overlap: int = 100,
-            batch_size: int = 16,  # Added batch size parameter
-            max_workers: int = 2,  # Limit concurrent processing
+            batch_size: int = 4,  # Added batch size parameter
+            max_workers: int = 1,  # Limit concurrent processing
     ):
         # Initialize embedding model lazily to save memory
         self.model_name = model_name
@@ -100,6 +100,7 @@ class VectorDatabase():
         gc.collect()
 
         # Initialize embedding model only when needed
+        print("embedding documents")
         self._init_embed_model()
 
         # Process embeddings in batches to reduce memory usage
