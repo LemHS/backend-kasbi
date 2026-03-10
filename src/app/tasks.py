@@ -4,8 +4,22 @@ from app.worker import celery_app
 from app.database import SessionLocal
 from app.models.document import Document
 from app.agents import instansiate_vector_db
+from celery import Task
 
-@celery_app.task(name="embed_document")
+class EmbedDocumentTask(Task):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        document_id = args[0]
+
+        session = SessionLocal()
+        try:
+            document = session.get(Document, document_id)
+            if document:
+                document.status = "failed"
+                session.commit()
+        finally:
+            session.close()
+
+@celery_app.task(base=EmbedDocumentTask, name="embed_document")
 def embed_document(document_id, file_path):
     """Background task to embed a document into the vector database."""
     session = SessionLocal()
