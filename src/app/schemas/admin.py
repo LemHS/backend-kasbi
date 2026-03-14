@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Sequence
 from datetime import datetime
 
 class FileStatus(BaseModel):
@@ -56,3 +56,7 @@ class UserRead(UserBase):
 
     class Config:
         from_attributes = True
+
+class DashboardResponse(BaseModel):
+    user_counts: Sequence
+    chats_counts: Sequence
