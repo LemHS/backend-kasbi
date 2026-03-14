@@ -306,4 +306,4 @@ def dashboard(
     return APIResponse(
         status_code=200, 
         message="Data returned successfully", 
-        data=DashboardResponse(user_counts=tuple(user_counts._mapping), chat_counts=tuple(chat_counts._mapping)))
+        data=DashboardResponse(user_counts=dict(user_counts._mapping), chat_counts=dict(chat_counts._mapping)))
