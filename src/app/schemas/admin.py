@@ -59,4 +59,4 @@ class UserRead(UserBase):
 
 class DashboardResponse(BaseModel):
     user_counts: Sequence
-    chats_counts: Sequence
+    chat_counts: Sequence
