@@ -58,5 +58,5 @@ class UserRead(UserBase):
         from_attributes = True
 
 class DashboardResponse(BaseModel):
-    user_counts: Sequence
-    chat_counts: Sequence
+    user_counts: Dict
+    chat_counts: Dict
