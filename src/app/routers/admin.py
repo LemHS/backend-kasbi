@@ -1,12 +1,13 @@
 import uuid
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Response, BackgroundTasks, Request, UploadFile, File
 from sqlalchemy.orm import selectinload
+from sqlalchemy import func, text, case
 from sqlmodel import Session, select
 
 from app.worker import celery_app
@@ -15,8 +16,9 @@ from app.database import get_db
 from app.models.document import Document
 from app.models.user import User
 from app.models.role import Role, UserRole
+from app.models.history import Chat
 
-from app.schemas.admin import FileStatus, DocumentResponse, DeleteDocRequest, CreateUserRequest, DeleteUserRequest, UserRead, UpdateUserRequest, UserResponse
+from app.schemas.admin import FileStatus, DocumentResponse, DeleteDocRequest, CreateUserRequest, DeleteUserRequest, UserRead, UpdateUserRequest, UserResponse, DashboardResponse
 from app.schemas.common import APIResponse
 
 from app.security.permissions import RequireRole
@@ -264,3 +266,44 @@ def update_user(
     session.refresh(user)
     session.refresh(user, attribute_names=["roles"])
     return APIResponse(status_code=200, message="User updated", data=UserRead.model_validate(user))
+
+@admin_router.get("/dashboard", response_model=APIResponse[DashboardResponse], status_code=201)
+def dashboard(
+    date: datetime,
+    session: Session = Depends(get_db),
+) -> APIResponse[UserResponse]:
+
+    start_of_month = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    months = [start_of_month]
+    current = start_of_month
+
+    for _ in range(5):
+        current = (current - timedelta(days=1)).replace(day=1)
+        months.append(current)
+
+
+    user_counts = session.exec(
+        select(
+            *[
+                func.sum(case((User.created_at < m, 1), else_=0)).label(f"month_{i}")
+                for i, m in enumerate(months)
+            ]
+        )
+    ).one()
+
+    chat_counts = session.exec(
+        select(
+            *[
+                func.sum(case((Chat.created_at < m, 1), else_=0)).label(f"month_{i}")
+                for i, m in enumerate(months)
+            ]
+        ).where(Chat.role == "user")
+    ).one()
+    
+    
+    
+    return APIResponse(
+        status_code=200, 
+        message="Data returned successfully", 
+        data=DashboardResponse(user_counts=user_counts, chat_counts=chat_counts))
