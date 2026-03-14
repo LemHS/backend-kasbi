@@ -271,7 +271,7 @@ def update_user(
 def dashboard(
     date: datetime,
     session: Session = Depends(get_db),
-) -> APIResponse[UserResponse]:
+) -> APIResponse[DashboardResponse]:
 
     start_of_month = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -306,4 +306,4 @@ def dashboard(
     return APIResponse(
         status_code=200, 
         message="Data returned successfully", 
-        data=DashboardResponse(user_counts=user_counts, chat_counts=chat_counts))
+        data=DashboardResponse(user_counts=dict(user_counts), chat_counts=dict(chat_counts)))
