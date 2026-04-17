@@ -111,12 +111,12 @@ class GraphBuilder():
         Tugas Anda adalah mengklasifikasikan intent (tujuan) dari pertanyaan pengguna.
         
         Kategori Label:
-        1. "SEARCH": Jika pertanyaan berkaitan dengan Data Pendidikan, BPMP Papua, Kurikulum, Sekolah, Guru, Regulasi, Dapodik, atau Layanan Kantor.
+        1. "SEARCH": Jika pertanyaan berkaitan dengan Pendidikan, Kurikulum, Sekolah, Guru, Regulasi, BPMP Papua, Dapodik, atau Layanan Kantor.
         2. "CHAT": Jika pengguna menyapa (Halo, Hai).
         3. "OOT": Jika pertanyaan jelas di luar topik pendidikan/kantor (misal: Politik, Resep Masakan, Film, Koding, Curhat Pribadi).
 
         Aturan Penting:
-        - Prioritaskan SEARCH jika ada kemungkinan pertanyaan masih berhubungan dengan pendidikan atau layanan kantor.
+        - Prioritaskan SEARCH jika ada kemungkinan pertanyaan masih berhubungan dengan pendidikan.
         - Jika ragu antara SEARCH dan OOT, pilih SEARCH.
         - Hanya pilih OOT jika benar-benar jelas tidak ada hubungan sama sekali dengan pendidikan atau layanan BPMP.
         - False positive (memilih SEARCH padahal bukan) lebih dapat diterima daripada false negative.
