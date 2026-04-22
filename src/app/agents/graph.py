@@ -115,6 +115,21 @@ class GraphBuilder():
         2. "CHAT": Jika pengguna menyapa (Halo, Hai).
         3. "OOT": Jika pertanyaan jelas di luar topik pendidikan/kantor (misal: Politik, Resep Masakan, Film, Koding, Curhat Pribadi).
 
+        BERIKUT ADALAH CONTOH ANALISISNYA (FEW-SHOT):
+        - Input: "Bagaimana cara login aplikasi Dapodik versi terbaru?"
+          Pemikiran: Pengguna bertanya tentang sistem pendataan pendidikan (Dapodik).
+          Intent: SEARCH
+
+        - Input: "Halo Kasbi, gimana kabarnya!"
+          Pemikiran: Pengguna hanya memberikan sapaan dan basa-basi.
+          Intent: CHAT
+
+        - Input: "Siapa presiden Amerika saat ini?"
+          Pemikiran: Pertanyaan ini membahas politik internasional, tidak ada hubungannya dengan BPMP Papua.
+          Intent: OOT
+        
+        Tentukan intensi dari pesan pengguna berikut!
+
         Aturan Penting:
         - Prioritaskan SEARCH jika ada kemungkinan pertanyaan masih berhubungan dengan pendidikan.
         - Jika ragu antara SEARCH dan OOT, pilih SEARCH.
